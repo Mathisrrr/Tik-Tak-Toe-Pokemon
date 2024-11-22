@@ -145,3 +145,5 @@ while True:
     cpt+=1
 g.attendreClic()
 g.fermerFenetre()
+
+
