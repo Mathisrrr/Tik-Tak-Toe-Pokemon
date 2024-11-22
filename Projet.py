@@ -2,10 +2,11 @@ from tkiteasy import *
 import numpy as np
 X,Y=800,800
 g=ouvrirFenetre(X,Y)
-
+#Dictionnaire qui renvoie la coordonnée de la grille
 dic={0:(0,0),1:(0,1),2:(0,2),3:(1,0),4:(1,1),5:(1,2),6:(2,0),7:(2,1),8:(2,2)}
+#Dictionnaire qui renvoie le numéro de la grille
 dicrec={(0,0):0,(0,1):1,(0,2):2,(1,0):3,(1,1):4,(1,2):5,(2,0):6,(2,1):7,(2,2):8}
-
+#Dictionnaire qui renvoie si c'est x ou o ou une case vide
 ref={0:"",1:"x",2:"o"}
 
 def positionin(x,y,a,b,c,d):
