@@ -34,6 +34,13 @@ class Morpion() :
 
                     self.casier.append(ligne)
 
+    def maj(self):
+        for ligne in self.casier:
+            for case in ligne :
+
+                if case.valeur!=0:
+                    g.changerCouleur(case.objet,"orange")
+
 
     def tour(self):
         self.plateau[1,0]=1
@@ -97,13 +104,13 @@ class jeu():
                 break
 
 
-    def changement_de_couleur(self,k):
+    def changement_de_couleur(self,k,couleur):
         for i in range (3):
 
             for j in range(3):
-                g.changerCouleur(self.grille[k].casier[i][j].objet,'light green')
+                g.changerCouleur(self.grille[k].casier[i][j].objet,couleur)
 
-    def tour(self,p):
+    def tour(self,p,z=20):
         clic=g.attendreClic()
         o=g.recupererObjet(clic.x,clic.y)
         good=True
@@ -127,21 +134,36 @@ class jeu():
 
 
         g.changerCouleur(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].objet,"orange")
+        if z!= 20:
+            self.changement_de_couleur(dicrec[a[0]],"blue")
+        self.changement_de_couleur(dicrec[a[1]],'light green')
+
+        z=dicrec[a[0]]
 
         #Affichage du sympbole du joueur
         g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur],y+Y/18,x+X/18,'black',20)
+
+        print("test", self.grille[dicrec[a[0]]])
+        print("test 2",self.grille[0])
+        self.grille[dicrec[a[0]]].maj()
+        self.grille[dicrec[a[1]]].maj()
+
+        return z
 
 
 poke=jeu()
 poke.initgraph()
 
 poke.remplissage()
-poke.changement_de_couleur(5)
+
 g.changerCouleur(poke.tabgraph[7][0],"red")
 cpt=0
 while True:
+    if cpt==0:
+        t=poke.tour(cpt)
+    else:
 
-    poke.tour(cpt)
+        t=poke.tour(cpt,t)
     cpt+=1
 g.attendreClic()
 g.fermerFenetre()
