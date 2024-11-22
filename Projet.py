@@ -2,10 +2,11 @@ from tkiteasy import *
 import numpy as np
 X,Y=800,800
 g=ouvrirFenetre(X,Y)
-
+#Dictionnaire qui renvoie la coordonnée de la grille
 dic={0:(0,0),1:(0,1),2:(0,2),3:(1,0),4:(1,1),5:(1,2),6:(2,0),7:(2,1),8:(2,2)}
+#Dictionnaire qui renvoie le numéro de la grille
 dicrec={(0,0):0,(0,1):1,(0,2):2,(1,0):3,(1,1):4,(1,2):5,(2,0):6,(2,1):7,(2,2):8}
-
+#Dictionnaire qui renvoie si c'est x ou o ou une case vide
 ref={0:"",1:"x",2:"o"}
 
 def positionin(x,y,a,b,c,d):
@@ -32,6 +33,13 @@ class Morpion() :
                 if j==2:
 
                     self.casier.append(ligne)
+
+    def maj(self):
+        for ligne in self.casier:
+            for case in ligne :
+
+                if case.valeur!=0:
+                    g.changerCouleur(case.objet,"orange")
 
 
     def tour(self):
@@ -96,13 +104,13 @@ class jeu():
                 break
 
 
-    def changement_de_couleur(self,k):
+    def changement_de_couleur(self,k,couleur):
         for i in range (3):
 
             for j in range(3):
-                g.changerCouleur(self.grille[k].casier[i][j].objet,'light green')
+                g.changerCouleur(self.grille[k].casier[i][j].objet,couleur)
 
-    def tour(self,p):
+    def tour(self,p,z=20):
         clic=g.attendreClic()
         o=g.recupererObjet(clic.x,clic.y)
         good=True
@@ -126,21 +134,36 @@ class jeu():
 
 
         g.changerCouleur(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].objet,"orange")
+        if z!= 20:
+            self.changement_de_couleur(dicrec[a[0]],"blue")
+        self.changement_de_couleur(dicrec[a[1]],'light green')
+
+        z=dicrec[a[0]]
 
         #Affichage du sympbole du joueur
         g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur],y+Y/18,x+X/18,'black',20)
+
+        print("test", self.grille[dicrec[a[0]]])
+        print("test 2",self.grille[0])
+        self.grille[dicrec[a[0]]].maj()
+        self.grille[dicrec[a[1]]].maj()
+
+        return z
 
 
 poke=jeu()
 poke.initgraph()
 
 poke.remplissage()
-poke.changement_de_couleur(5)
+
 g.changerCouleur(poke.tabgraph[7][0],"red")
 cpt=0
 while True:
+    if cpt==0:
+        t=poke.tour(cpt)
+    else:
 
-    poke.tour(cpt)
+        t=poke.tour(cpt,t)
     cpt+=1
 g.attendreClic()
 g.fermerFenetre()
