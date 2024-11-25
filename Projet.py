@@ -2,6 +2,7 @@ from tkiteasy import *
 import numpy as np
 X,Y=800,800
 g=ouvrirFenetre(X,Y)
+
 #Dictionnaire qui renvoie la coordonnée de la grille
 dic={0:(0,0),1:(0,1),2:(0,2),3:(1,0),4:(1,1),5:(1,2),6:(2,0),7:(2,1),8:(2,2)}
 #Dictionnaire qui renvoie le numéro de la grille
@@ -125,7 +126,7 @@ class jeu():
                 o = g.recupererObjet(clic.x, clic.y)
 
         if p%2==0:
-            self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur=1
+            self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 1
         else:
             self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 2
 
