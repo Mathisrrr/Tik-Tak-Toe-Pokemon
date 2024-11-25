@@ -31,7 +31,7 @@ def combat(pokemon1,pokemon2):  #1v1 entre les pokemon
 
     elif att_pok1['HP']<=0:
         print(f"{att_pok2['Name']} a gagné")
-    elif:
+    else:
         print(f"{att_pok1['Name']} a gagné")
 
 
