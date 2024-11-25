@@ -125,7 +125,7 @@ class jeu():
                 o = g.recupererObjet(clic.x, clic.y)
 
         if p%2==0:
-            self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur=1
+            self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 1
         else:
             self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 2
 
