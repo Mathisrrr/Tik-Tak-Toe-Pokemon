@@ -16,20 +16,24 @@ def positionin(x,y,a,b,c,d):
     return False
 class Morpion() :
     def __init__(self,k):
-        self.plateau=np.full((3,3),0)
+
         self.game=True
         self.numero=k
+        self.actif=0
+
 
     def ajoutcase(self,k):
         self.casier=[]
+        self.casetomorpion={}
         # On rajoute les 9 cases du morpion
         for i in range(3):
             ligne = []
             for j in range(3):
                 x=k[0]*3+i
                 y=k[1]*3+j
-
-                ligne.append(Case(k,(i,j),poke.tabgraph[x][y]))
+                a=Case(k,(i,j),poke.tabgraph[x][y])
+                self.casetomorpion[a]=self
+                ligne.append(a)
                 poke.relation[poke.tabgraph[x][y]]=(k,(i,j))
                 if j==2:
 
@@ -43,15 +47,12 @@ class Morpion() :
                     g.changerCouleur(case.objet,"orange")
 
 
-    def tour(self):
-        self.plateau[1,0]=1
-        return None
-
 class Case():
     def __init__(self,k,tu,objet):
         self.indice=(k,tu)
         self.valeur=0
         self.objet=objet
+
 
 
     def changement_de_valeur(self):
@@ -120,11 +121,19 @@ class jeu():
             if o in self.relation.keys() and o not in self.dejapris:
                 self.dejapris.append(o)
                 a = self.relation[o]
-                good=False
+                if p==0:
+                    good=False
+                else:
+                    
+                    if self.grille[dicrec[a[0]]].actif==1:
+                        good=False
+
             else:
                 clic=g.attendreClic()
                 o = g.recupererObjet(clic.x, clic.y)
 
+
+        print(a)
         if p%2==0:
             self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 1
         else:
@@ -139,17 +148,17 @@ class jeu():
             self.changement_de_couleur(dicrec[a[0]],"blue")
         self.changement_de_couleur(dicrec[a[1]],'light green')
 
-        z=dicrec[a[0]]
+        prochain=dicrec[a[1]]
+        self.grille[prochain].actif=1
 
         #Affichage du sympbole du joueur
         g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur],y+Y/18,x+X/18,'black',20)
 
-        print("test", self.grille[dicrec[a[0]]])
-        print("test 2",self.grille[0])
+
         self.grille[dicrec[a[0]]].maj()
         self.grille[dicrec[a[1]]].maj()
 
-        return z
+        return prochain
 
 
 poke=jeu()
@@ -161,10 +170,10 @@ g.changerCouleur(poke.tabgraph[7][0],"red")
 cpt=0
 while True:
     if cpt==0:
-        t=poke.tour(cpt)
+        ancien=poke.tour(cpt)
     else:
 
-        t=poke.tour(cpt,t)
+        ancien=poke.tour(cpt,ancien)
     cpt+=1
 g.attendreClic()
 g.fermerFenetre()
