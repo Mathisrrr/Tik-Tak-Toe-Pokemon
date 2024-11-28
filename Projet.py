@@ -16,28 +16,30 @@ def positionin(x,y,a,b,c,d):
     return False
 class Morpion() :
     def __init__(self,k):
-
+        self.valeur=0
         self.game=True
         self.numero=k
         self.actif=0
 
 
-    def ajoutcase(self,k):
+    def ajoutcase(self,coord):# coord est la coordonnée du petit morpion dans la grande grille
+
         self.casier=[]
-        self.casetomorpion={}
+
         # On rajoute les 9 cases du morpion
         for i in range(3):
             ligne = []
             for j in range(3):
-                x=k[0]*3+i
-                y=k[1]*3+j
-                a=Case(k,(i,j),poke.tabgraph[x][y])
-                self.casetomorpion[a]=self
+                x=coord[0]*3+i
+                y=coord[1]*3+j
+                a=Case(coord,(i,j),poke.tabgraph[x][y])
+
                 ligne.append(a)
-                poke.relation[poke.tabgraph[x][y]]=(k,(i,j))
+                poke.relation[poke.tabgraph[x][y]]=(coord,(i,j))
                 if j==2:
 
                     self.casier.append(ligne)
+
 
     def maj(self):
         for ligne in self.casier:
@@ -48,15 +50,10 @@ class Morpion() :
 
 
 class Case():
-    def __init__(self,k,tu,objet):
-        self.indice=(k,tu)
+    def __init__(self,coord,tu,objet):# coord: coordonné dans la grande grille, tu: coordonnée dans la petite grille
+        self.indice=(coord,tu)
         self.valeur=0
         self.objet=objet
-
-
-
-    def changement_de_valeur(self):
-        return None
 
 class jeu():
     def __init__(self):
@@ -68,7 +65,7 @@ class jeu():
 
     def initgraph(self):
         self.tabgraph=[]
-
+        #Création des cases en graphique
         for i in range (9):
             tab=[]
             for j in range (9):
@@ -78,12 +75,8 @@ class jeu():
                 if j ==8:
 
                     self.tabgraph.append(tab)
-        g.changerCouleur(self.tabgraph[4][0],'red')
-        a=self.tabgraph[0][0]
-        g.changerCouleur(a,"purple")
 
-
-
+        #Affichage des lignes
         for i in range (1,10):
             couleur = 'white'
             ep=1
@@ -91,18 +84,18 @@ class jeu():
                 couleur="red"
                 ep=4
 
-
             g.dessinerLigne(i*X/9,0,i*X/9,Y,couleur,ep=ep)
             g.dessinerLigne(0,i*Y/9,X,i*Y/9,couleur,ep=ep)
 
 
 
-    def remplissage(self): #Pour chaque morpion, on lui rajoute ses cases
+    def remplissage(self): #Pour chaque petit morpion, on lui rajoute ses cases
         i=0
         for m in self.grille:
             m.ajoutcase(dic[i])
             i+=1
             if i ==9:
+
                 break
 
 
@@ -112,7 +105,48 @@ class jeu():
             for j in range(3):
                 g.changerCouleur(self.grille[k].casier[i][j].objet,couleur)
 
-    def tour(self,p,z=20):
+    def verif_morpion(self,morpion,pendule):
+        en_jeu=True
+
+        #Vérification des lignes
+        for ligne in range (3):
+            if morpion.casier[ligne][0].valeur == morpion.casier[ligne][1].valeur == morpion.casier[ligne][2].valeur and morpion.casier[ligne][0].valeur != 0:
+
+                morpion.game=False
+                en_jeu = False
+
+
+        #Vérification des colonnes
+        for colonne in range (3):
+            if morpion.casier[0][colonne].valeur == morpion.casier[1][colonne].valeur == morpion.casier[2][colonne].valeur and morpion.casier[0][colonne].valeur != 0:
+
+                morpion.game=False
+                en_jeu = False
+
+
+        #Vérification des diagonales
+        if morpion.casier[0][0].valeur==morpion.casier[1][1].valeur==morpion.casier[2][2].valeur and morpion.casier[0][0].valeur!=0:
+
+            morpion.game = False
+            en_jeu = False
+
+
+        if morpion.casier[0][2].valeur==morpion.casier[1][1].valeur==morpion.casier[0][2].valeur and morpion.casier[1][1].valeur!=0:
+
+            morpion.game = False
+            en_jeu = False
+
+        if en_jeu is False:
+            if pendule%2==0:
+                morpion.valeur=1
+            else:
+                morpion.valeur=2
+
+        return en_jeu
+
+
+
+    def tour(self,pendule,z=20):
         clic=g.attendreClic()
         o=g.recupererObjet(clic.x,clic.y)
         good=True
@@ -121,7 +155,7 @@ class jeu():
             if o in self.relation.keys() and o not in self.dejapris:
                 self.dejapris.append(o)
                 a = self.relation[o]
-                if p==0:
+                if pendule==0:
                     good=False
                 else:
                     
@@ -133,8 +167,8 @@ class jeu():
                 o = g.recupererObjet(clic.x, clic.y)
 
 
-        print(a)
-        if p%2==0:
+
+        if pendule%2==0:
             self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 1
         else:
             self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 2
@@ -144,6 +178,8 @@ class jeu():
 
 
         g.changerCouleur(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].objet,"orange")
+
+        #On remet l'ancienne couleur et on met la nouvelle couleure dans la zone à jouer
         if z!= 20:
             self.changement_de_couleur(dicrec[a[0]],"blue")
         self.changement_de_couleur(dicrec[a[1]],'light green')
@@ -151,10 +187,18 @@ class jeu():
         prochain=dicrec[a[1]]
         self.grille[prochain].actif=1
 
-        #Affichage du sympbole du joueur
-        g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur],y+Y/18,x+X/18,'black',20)
+        #On vérifie si le petit morpion est terminé
+        if self.verif_morpion(self.grille[dicrec[a[0]]],pendule):
+            g.changerCouleur(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].objet, "orange")
 
+            # Affichage du sympbole du joueur
+            g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur], y + Y / 18, x + X / 18,
+                            'black', 20)
+        else:
+            g.dessinerRectangle((a[0][1]*X/3)+2,(a[0][0]*Y/3)+2,(X/3)-4,(Y/3)-4,'light blue')
+            g.afficherTexte(ref[self.grille[dicrec[a[0]]].valeur],(a[0][1]*Y/3)+Y/6,(a[0][0]*X/3)+X/6,"black",75)
 
+        #On remet de la couleur sur les cases déjà prise
         self.grille[dicrec[a[0]]].maj()
         self.grille[dicrec[a[1]]].maj()
 
