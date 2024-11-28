@@ -6,10 +6,11 @@ import random
 
 # Charger les données Pokémon
 pokemon_df = pd.read_csv("pokemon.csv")
+pokemon_df['Level'] = 1
 
-# Classe Pokémon
+#class Pokémon
 class Pokemon:
-    def __init__(self, name, type1, type2, total, hp, attack, defense, sp_atk, sp_def, speed, generation, legendary):
+    def __init__(self, name, type1, type2, total, hp, attack, defense, sp_atk, sp_def, speed, generation, legendary,level):
         self.name = name
         self.type1 = type1
         self.type2 = type2
@@ -22,21 +23,19 @@ class Pokemon:
         self.speed = speed
         self.generation = generation
         self.legendary = legendary
-
-    def power_score(self):
-        return self.total
+        self.level = level
 
     def __str__(self):
-        return f"{self.name} ({self.type1}/{self.type2}) - HP: {self.hp}, ATK: {self.attack}, DEF: {self.defense}, SPEED: {self.speed}:"
+        return f"{self.name} ({self.type1}/{self.type2}) - HP: {self.hp}, ATK: {self.attack}, DEF: {self.defense}, SPEED: {self.speed}: LEVEL: {self.level})"
 
-    # Classe Roster
+#class Roster
 class Roster:
     def __init__(self, dataframe, num_pokemon):
         self.dataframe = dataframe
         self.num_pokemon = num_pokemon
-        self.pokemon_list = self.initialize_roster()
+        self.pokemon_list = self.init_roster()
 
-    def initialize_roster(self):
+    def init_roster(self): #return une liste d'objects pokemon
         #on choisit num_pokemon lignes du dataframe aléatoirement (.sample)
         sous_dataframe = self.dataframe.sample(self.num_pokemon)
         roster = []
@@ -54,7 +53,8 @@ class Roster:
                 sp_def=row['Sp. Def'],
                 speed=row['Speed'],
                 generation=row['Generation'],
-                legendary=row['Legendary']
+                legendary=row['Legendary'],
+                level=row['Level']
             )
             roster.append(pokemon)
         return roster
@@ -62,38 +62,42 @@ class Roster:
     def total_power(self): #Calcule la somme des scores de puissance (self.total) de tous les Pokémon d'un roaster
         return sum(pokemon.total for pokemon in self.pokemon_list)
 
-    def display_roster(self):
-        for idx, pokemon in enumerate(self.pokemon_list, start=1):
-            print(f"{idx}. {pokemon}")
+    def print_roster(self): # affiche le roster de manière lisible et jolie
+        for index, pokemon in enumerate(self.pokemon_list, start=1):
+            print(f"{index}. {pokemon}")
 
     # Fonction pour équilibrer les rosters
-    # diff = différence maximale de puissance en pourcentage entre les 2 roasters
+    # diff = différence maximale de puissance en pourcentage entre les 2 rosters qu'on cherche à avoir
     def balance_rosters(roster1, roster2, diff=10):
-
         power1 = roster1.total_power()
         power2 = roster2.total_power()
+        diff_power = abs(power1 - power2) / max(power1, power2) * 100 #différence de puissance en % entre les 2 rosters
+        print(f"Power roster 1: {power1}\nPower roster 2: {power2}\n Difference de power en %: {diff_power}")
 
-        while abs(power1 - power2) / max(power1, power2) * 100 > diff :
-            # Trouver un Pokémon à échanger
+        while diff_power > diff :
+            #on trouve 2 Pokémons à échanger
             if power1 > power2:
-                # Échanger un Pokémon fort de roster1 avec un faible de roster2
-                pokemon_to_give = max(roster1.pokemon_list, key=lambda p: p.power_score())
-                pokemon_to_take = min(roster2.pokemon_list, key=lambda p: p.power_score())
+                #échanger un Pokémon fort de roster1 avec un faible de roster2
+                pokemon_to_give = max(roster1.pokemon_list, key=lambda p: p.total())
+                pokemon_to_take = min(roster2.pokemon_list, key=lambda p: p.total())
             else:
+                #échanger un pokemon fort de roster2 avec un faible de roster1
                 pokemon_to_give = max(roster2.pokemon_list, key=lambda p: p.power_score())
                 pokemon_to_take = min(roster1.pokemon_list, key=lambda p: p.power_score())
 
-            # Échange des Pokémon
+            #échange des Pokémon
             if power1 > power2:
                 roster1.pokemon_list.remove(pokemon_to_give)
+                roster1.pokemon_list.append(pokemon_to_take)
                 roster2.pokemon_list.append(pokemon_to_give)
                 roster2.pokemon_list.remove(pokemon_to_take)
-                roster1.pokemon_list.append(pokemon_to_take)
+
             else:
-                roster2.pokemon_list.remove(pokemon_to_give)
+                roster2.pokemon_list.remove(pokemon_to_give)`
+                roster2.pokemon_list.append(pokemon_to_take)
                 roster1.pokemon_list.append(pokemon_to_give)
                 roster1.pokemon_list.remove(pokemon_to_take)
-                roster2.pokemon_list.append(pokemon_to_take)
+
 
             # Recalcul des puissances
             power1 = roster1.total_power()
@@ -120,7 +124,7 @@ print(f"Équipe 2 : {roster_player2.total_power()}")
 
 # Affichage des rosters
 print("\nRoster équilibré du joueur 1:")
-roster_player1.display_roster()
+roster_player1.print_roster()
 
 print("\nRoster équilibré du joueur 2:")
-roster_player2.display_roster()
+roster_player2.print_roster()

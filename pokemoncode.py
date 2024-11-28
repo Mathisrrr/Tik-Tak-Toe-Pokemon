@@ -24,7 +24,15 @@ def getattributte(pokemon):  #avoir les attributs d'un pokemon dans un dict
 def combat(pokemon1,pokemon2):  #1v1 entre les pokemon
     att_pok1=getattributte(pokemon1)
     att_pok2=getattributte(pokemon2)
-    round_combat(att_pok1,att_pok2)
+    while att_pok1['HP'] > 0 and att_pok2['HP'] > 0:
+        round_combat(att_pok1,att_pok2)
+    if att_pok1['HP'] <= 0 and att_pok2['HP']<=0:
+        print("egalite")
+
+    elif att_pok1['HP']<=0:
+        print(f"{att_pok2['Name']} a gagné")
+    else:
+        print(f"{att_pok1['Name']} a gagné")
 
 
 #proba que le poke 2 dodge l'attaque du poke 1
