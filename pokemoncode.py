@@ -2,7 +2,7 @@ import pandas as pd
 import random
 import numpy as np
 
-data=pd.read_csv('pokemon (1).csv')
+data=pd.read_csv('pokemon.csv')
 print(data.head(5))
 print(data.columns)
 
@@ -21,6 +21,7 @@ def getattributte(pokemon):  #avoir les attributs d'un pokemon dans un dict
     pok = data.loc[data['Name'] == pokemon]
     dict_attribute=pok.iloc[0].to_dict()
     return dict_attribute
+
 def combat(pokemon1,pokemon2):  #1v1 entre les pokemon
     att_pok1=getattributte(pokemon1)
     att_pok2=getattributte(pokemon2)
