@@ -10,7 +10,7 @@ import math
 nb_pokemon = 3
 
 #on crée le dataframe
-pokemon_df = pd.read_csv("pokemon.csv")
+pokemon_df = pd.read_csv("pokemon2.csv")
 pokemon_df['Level'] = 1
 pokemon_df['Type 2'] = pokemon_df['Type 2'].fillna("") #on remplace tout les types 2 manquants par le caractère vide
 
