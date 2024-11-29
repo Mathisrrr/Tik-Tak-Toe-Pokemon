@@ -1,7 +1,12 @@
 from tkiteasy import *
 import numpy as np
-X,Y=800,800
-g=ouvrirFenetre(X,Y)
+GX,GY=1400,800
+#coord du morpion
+X,Y=600,600
+#Deuxième écran
+sx=GX-X
+
+g=ouvrirFenetre(GX,GY)
 
 #Dictionnaire qui renvoie la coordonnée de la grille
 dic={0:(0,0),1:(0,1),2:(0,2),3:(1,0),4:(1,1),5:(1,2),6:(2,0),7:(2,1),8:(2,2)}
@@ -88,6 +93,18 @@ class jeu():
             g.dessinerLigne(i*X/9,0,i*X/9,Y,couleur,ep=ep)
             g.dessinerLigne(0,i*Y/9,X,i*Y/9,couleur,ep=ep)
 
+        #Mise des images des joeurs:
+        g.dessinerLigne(X,GY/2,GX,GY/2,"white",2)
+
+        g.afficherImage(X+sx/2.5,GY/30,"J1.png",200,50)
+        g.afficherImage(X+sx/2.5,GY/1.9,"J2.png",200,50)
+
+    def affichage_des_rosters(self):
+        None
+
+
+
+
 
 
     def remplissage(self): #Pour chaque petit morpion, on lui rajoute ses cases
@@ -149,6 +166,7 @@ class jeu():
 
 
     def tour(self,pendule,z=20):
+
         clic=g.attendreClic()
         o=g.recupererObjet(clic.x,clic.y)
         good=True
@@ -218,6 +236,7 @@ class jeu():
     def lancer_le_jeu(self):
         self.initgraph()
         self.remplissage()
+        self.affichage_des_rosters()
         cpt = 0
         while True:
             if cpt == 0:
