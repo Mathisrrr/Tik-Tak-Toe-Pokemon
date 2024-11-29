@@ -69,6 +69,48 @@ class jeu():
         self.dejapris=[]
         self.verif=True
 
+    def delete(self, list):                 #Cette fonction reçoit une liste d'objet graphique et les supprime tous
+        for obj in list:
+            g.supprimer(obj)
+
+    def Menu(self):                     #Cette fontion est la première qui est appelés quand on lance le jeu après l'ouverture de la fenêtre,
+                                        #Elle permet au joueur d'entrer dans le jeu
+        g.afficherImage(0, 0, "fond.jpg", GX, GY)
+        text = [g.afficherTexte("Bienvenue dans le jeu Poke-Tac-Toe", GX / 2, 2 * GY / 5, "Black", int(GX / 22)),
+                g.afficherTexte("Cliquez sur l'image pour afficher les modes de jeu", GX / 2, GY / 2, 'Black',
+                                     int(GX / 30)),
+                g.afficherImage(0.3*GX, 0.6*GY, "Titre.png")]
+
+        a = True
+        while a:
+            clic = g.attendreClic()
+            o = g.recupererObjet(clic.x, clic.y)
+            if o == text[2]:                        #Si on clique sur l'image, on rentre dans le jeu, sinon rien ne se passe
+                self.delete(text)
+                a = False
+                self.choices()
+
+    def choices(self):              #Cette fonction permet au joueur de sélectionner le mode de jeu, d'affciher les règles du jeu ou bien d'aller dans les paramètres afin de modifier les paramètres de jeu
+        a = True
+        graph = [g.afficherImage(GX/6,0.5*GY,"1 vs 1.png"),g.afficherImage(0.6*GX,0.5*GY-20,"Mode IA.png")]
+
+
+        while a:
+
+            clic = g.attendreClic()
+            o = g.recupererObjet(clic.x, clic.y)
+
+            if o in graph:
+                self.delete(graph)
+                a = False
+            if o == graph[0]:
+                self.jeu_en_duo()
+            if o == graph[1]:
+                self.jeu_vs_ia()
+            if o == graph[2]:
+                self.choices2()
+            if o == graph[3]:
+                self.settings()
     def initgraph(self):
         self.tabgraph=[]
         #Création des cases en graphique
@@ -233,7 +275,7 @@ class jeu():
 
         return prochain
 
-    def lancer_le_jeu(self):
+    def jeu_en_duo(self):
         self.initgraph()
         self.remplissage()
         self.affichage_des_rosters()
@@ -246,11 +288,14 @@ class jeu():
                 ancien = self.tour(cpt, ancien)
             cpt += 1
 
+    def jeu_vs_ia(self):
+        return None
+
 
 
 
 poke=jeu()
-poke.lancer_le_jeu()
+poke.Menu()
 
 
 
