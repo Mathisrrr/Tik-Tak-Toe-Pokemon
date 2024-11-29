@@ -282,15 +282,17 @@ class Jeu:
 
         if pokemon1.hp == 0 and pokemon2.hp == 0:
             print("Égalité")
+            return True
 
         elif pokemon1.hp == 0:
             print(f"\n{pokemon2.name} a gagné")
             pokemon1.level += 1
+            return pokemon1, pokemon2 #pokemon qui a perdu en premier (donc celui qu'on garde)
 
         else:
             print(f"{pokemon1.name} a gagné")
             pokemon2.level += 1
-            return pokemon1
+            return pokemon2, pokemon1 #pokemon qui a perdu en premier
 
     def choose_fighter(self):
         a=0
@@ -304,7 +306,7 @@ roster_player2 = Roster(pokemon_df)
 
 # Équilibrage des équipes
 jeu.balance_rosters(roster_player1, roster_player2)
-jeu.equilibrer_types(roster_player1, roster_player2)
+#jeu.equilibrer_types(roster_player1, roster_player2)
 
 # Affichage des rosters
 print("\nRoster joueur 1:")
