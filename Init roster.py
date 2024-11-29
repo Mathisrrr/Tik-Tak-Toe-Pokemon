@@ -6,7 +6,7 @@ import random
 import numpy as np
 
 #on crée le dataframe
-pokemon_df = pd.read_csv("pokemon.csv")
+pokemon_df = pd.read_csv("pokemon2.csv")
 pokemon_df['Level'] = 1
 
 #class Pokémon
