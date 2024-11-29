@@ -46,7 +46,7 @@ class Morpion() :
             for case in ligne :
 
                 if case.valeur!=0:
-                    g.changerCouleur(case.objet,"orange")
+                    g.changerCouleur(case.objet,"olivedrab")
 
 
 class Case():
@@ -62,6 +62,7 @@ class jeu():
             self.grille.append(Morpion(i))
         self.relation={}
         self.dejapris=[]
+        self.verif=True
 
     def initgraph(self):
         self.tabgraph=[]
@@ -69,7 +70,7 @@ class jeu():
         for i in range (9):
             tab=[]
             for j in range (9):
-                rect=g.dessinerRectangle(j*X/9,i*Y/9,X/9,(Y/9)-1,'blue')
+                rect=g.dessinerRectangle(j*X/9,i*Y/9,X/9,(Y/9)-1,'plum')
 
                 tab.append(rect)
                 if j ==8:
@@ -91,6 +92,7 @@ class jeu():
 
     def remplissage(self): #Pour chaque petit morpion, on lui rajoute ses cases
         i=0
+
         for m in self.grille:
             m.ajoutcase(dic[i])
             i+=1
@@ -131,7 +133,7 @@ class jeu():
             en_jeu = False
 
 
-        if morpion.casier[0][2].valeur==morpion.casier[1][1].valeur==morpion.casier[0][2].valeur and morpion.casier[1][1].valeur!=0:
+        if morpion.casier[0][2].valeur==morpion.casier[1][1].valeur==morpion.casier[2][0].valeur and morpion.casier[1][1].valeur!=0:
 
             morpion.game = False
             en_jeu = False
@@ -152,10 +154,11 @@ class jeu():
         good=True
 
         while good:
+
             if o in self.relation.keys() and o not in self.dejapris:
                 self.dejapris.append(o)
                 a = self.relation[o]
-                if pendule==0:
+                if pendule==0 or self.verif==False:
                     good=False
                 else:
                     
@@ -176,27 +179,35 @@ class jeu():
         x=a[0][0]*X/3+a[1][0]*X/9
         y=a[0][1]*Y/3+a[1][1]*Y/9
 
+        prochain = dicrec[a[1]]
+        if self.grille[prochain].valeur==0: #Si la zone où l'on veut jouer est disponible
 
-        g.changerCouleur(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].objet,"orange")
+            #On remet l'ancienne couleur et on met la nouvelle couleure dans la zone à jouer
+            if z!= 20:
+                self.changement_de_couleur(dicrec[a[0]],"plum")
+            self.changement_de_couleur(dicrec[a[1]],'slateblue')
+            self.verif=True
 
-        #On remet l'ancienne couleur et on met la nouvelle couleure dans la zone à jouer
-        if z!= 20:
-            self.changement_de_couleur(dicrec[a[0]],"blue")
-        self.changement_de_couleur(dicrec[a[1]],'light green')
 
-        prochain=dicrec[a[1]]
-        self.grille[prochain].actif=1
+
+            #On désactive l'ancien morpion et on active le prochain
+            self.grille[dicrec[a[0]]].actif = 0
+            self.grille[prochain].actif=1
+
 
         #On vérifie si le petit morpion est terminé
         if self.verif_morpion(self.grille[dicrec[a[0]]],pendule):
-            g.changerCouleur(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].objet, "orange")
+            g.changerCouleur(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].objet, "olivedrab")
 
             # Affichage du sympbole du joueur
             g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur], y + Y / 18, x + X / 18,
-                            'black', 20)
+                            'black', 30)
         else:
             g.dessinerRectangle((a[0][1]*X/3)+2,(a[0][0]*Y/3)+2,(X/3)-4,(Y/3)-4,'light blue')
-            g.afficherTexte(ref[self.grille[dicrec[a[0]]].valeur],(a[0][1]*Y/3)+Y/6,(a[0][0]*X/3)+X/6,"black",75)
+            g.afficherTexte(ref[self.grille[dicrec[a[0]]].valeur],(a[0][1]*Y/3)+Y/6,(a[0][0]*X/3)+X/6,"black",100)
+            if self.grille[prochain].valeur!=0:
+
+                self.verif=False
 
         #On remet de la couleur sur les cases déjà prise
         self.grille[dicrec[a[0]]].maj()
@@ -210,7 +221,6 @@ poke.initgraph()
 
 poke.remplissage()
 
-g.changerCouleur(poke.tabgraph[7][0],"red")
 cpt=0
 while True:
     if cpt==0:
