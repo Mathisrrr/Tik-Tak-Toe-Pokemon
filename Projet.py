@@ -215,20 +215,26 @@ class jeu():
 
         return prochain
 
+    def lancer_le_jeu(self):
+        self.initgraph()
+        self.remplissage()
+        cpt = 0
+        while True:
+            if cpt == 0:
+                ancien = self.tour(cpt)
+            else:
+
+                ancien = self.tour(cpt, ancien)
+            cpt += 1
+
+
+
 
 poke=jeu()
-poke.initgraph()
+poke.lancer_le_jeu()
 
-poke.remplissage()
 
-cpt=0
-while True:
-    if cpt==0:
-        ancien=poke.tour(cpt)
-    else:
 
-        ancien=poke.tour(cpt,ancien)
-    cpt+=1
 g.attendreClic()
 g.fermerFenetre()
 
