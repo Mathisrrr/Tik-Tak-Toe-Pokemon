@@ -282,7 +282,7 @@ class jeu():
             except:
                 None
             if o!=1:
-                if o in graph:
+                if o in graph and o !=graph[3]:
                     self.delete(graph)
                     a = False
                 if o == graph[0]:
@@ -430,23 +430,28 @@ class jeu():
         o=g.recupererObjet(clic.x,clic.y)
         good=True
 
+        essai=0
         while good:
+            essai+=1
 
             if o in self.relation.keys() and o not in self.dejapris:
-                self.dejapris.append(o)
                 a = self.relation[o]
                 if pendule==0 or self.verif==False:
+                    self.dejapris.append(o)
+
                     good=False
                 else:
                     
                     if self.grille[dicrec[a[0]]].actif==1:
+                        self.dejapris.append(o)
+
                         good=False
 
             else:
                 clic=g.attendreClic()
                 o = g.recupererObjet(clic.x, clic.y)
 
-
+        print(self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur,pendule)
 
         if pendule%2==0:
             self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 1
