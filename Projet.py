@@ -247,6 +247,7 @@ class Case():
         self.indice=(coord,tu)
         self.valeur=0
         self.objet=objet
+        self.pokemon=0
 
 class jeu():
     def __init__(self):
@@ -258,6 +259,7 @@ class jeu():
         self.verif=True
         self.num_pokemon=20
         self.case_occupe=[]
+        self.poke_on_morpion=[]
 
 
 
@@ -565,20 +567,35 @@ class jeu():
         good=True
 
         while good:
+
             if o!=1:
 
-                if o in self.relation.keys() and o not in self.case_plus_jouable:
+                if (o in self.relation.keys() or o in self.poke_on_morpion) and o not in self.case_plus_jouable: #On vérifie que la case est en jeu
+                    if o in self.poke_on_morpion:
+                        o=g.recupererObjetDessous(clic.x,clic.y)
                     a = self.relation[o]
-                    if pendule == 0 or self.verif == False:
+                    if pendule == 0 or self.verif == False:             #Si c'est le premier tour ou cas special, on peut jouer ou on veut
                         self.case_occupe.append(o)
+                        case = self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]]
 
                         good = False
                     else:
 
-                        if self.grille[dicrec[a[0]]].actif == 1:
+                        if self.grille[dicrec[a[0]]].actif == 1:        #On vérifie que la zone à jouer est active
                             self.case_occupe.append(o)
+                            case = self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]]
 
                             good = False
+
+            if good is False:#Si la case qu'on joue est jouable, il faut vérifier qu'on affronte une case vide ou adverse
+                if pendule%2==0:
+                    if case.valeur==3:
+
+                        good=True
+                else:
+                    if case.valeur==4:
+
+                        good=True
 
             else:
                     clic=g.attendreClic()
@@ -587,11 +604,23 @@ class jeu():
                     except:
                         o=1
         #A partir d'ici, on est sur une case jouable donc elle est soit vide,soit déja prise par un pokemon: valeur=3 si joueur 1,4 si joueur 2
-        if self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur==0: #Dans le cas où la case est vide
+
+        if case.valeur==0: #Dans le cas où la case est vide
             if pendule%2==0:
-                self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 3
+                case.pokemon=choix[0]
+                case.valeur = 3
             else:
-                self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur = 4
+                case.pokemon=choix[0]
+                case.valeur = 4
+
+        #Deuxième cas, il y a déjà un pokemon sur la case
+        else:
+            print('test,',choix[0])
+            print(case.pokemon,choix[0],'"bzdcbzbczibczicbzibcziobcozicbozbocz')
+            fight=combat(case.pokemon,choix[0])
+            print(fight,"combat")
+
+
 
         x=a[0][0]*X/3+a[1][0]*X/9
         y=a[0][1]*Y/3+a[1][1]*Y/9
@@ -616,7 +645,7 @@ class jeu():
 
         #On vérifie si le petit morpion est terminé
         if self.verif_morpion(self.grille[dicrec[a[0]]],pendule):#pas terminé
-            case=self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]]
+
             if case.valeur==3:
                 g.changerCouleur(case.objet, "olivedrab")
             elif case.valeur==4:
@@ -625,7 +654,8 @@ class jeu():
 
 
             # Affichage du pokemon du joueur si le morpion est encore en jeu
-            g.afficherImage((y + Y / 18)-36, (x + X / 18)-40,f"bw/{pokeindex[choix[0]]}.png",int((X/9)*1.2),int((Y/9)*1.2))
+            img=g.afficherImage((y + Y / 18)-36, (x + X / 18)-40,f"bw/{pokeindex[choix[0]]}.png",int((X/9)*1.2),int((Y/9)*1.2))
+            self.poke_on_morpion.append(img)
            # g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur], y + Y / 18, x + X / 18,'black', 30)
         else:#On donne le grand morpion à un joueur
             g.dessinerRectangle((a[0][1]*X/3)+2,(a[0][0]*Y/3)+2,(X/3)-4,(Y/3)-4,'light blue')
