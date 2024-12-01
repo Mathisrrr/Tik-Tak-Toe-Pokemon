@@ -541,9 +541,12 @@ class jeu():
     def tour(self,pendule,z=20): #Z est le numéro du morpion où l'on doit jouer
         o=1
 
+
         choix=self.choixpokemon(pendule)#(Nom, coordx,coordy)
         while choix is None:
             choix=self.choixpokemon(pendule)
+        self.liste=self.affichage_stats(choix[0])
+
 
         carre=g.dessinerRectangle(choix[1]+20,choix[2],self.trecx-50,self.tercy,'grey')
         g.placerAuDessous(carre)
@@ -558,7 +561,7 @@ class jeu():
                 o=1
 
         while o in self.dicgraph1 or o in self.dicgraph2:       #Sélection du pokemon
-            print("yessss")
+            self.delete(self.liste)
             if pendule % 2 == 0:
                 try:
                     if self.dicgraph1[o][0] in self.pokedispo1:
@@ -570,6 +573,7 @@ class jeu():
                     if self.dicgraph2[o][0] in self.pokedispo2:
                         choix = self.dicgraph2[o]
                 except:None
+            self.liste=self.affichage_stats(choix[0])
             g.supprimer(carre)
             carre=g.dessinerRectangle(choix[1]+20,choix[2],self.trecx-50,self.tercy,'grey')
             g.placerAuDessous(carre)
@@ -580,6 +584,7 @@ class jeu():
                 o = g.recupererObjet(clic.x, clic.y)
             except:
                 o = 1
+
         good=True
         while good:
             if o!=1:
@@ -635,6 +640,11 @@ class jeu():
         x = a[0][0] * X / 3 + a[1][0] * X / 9
         y = a[0][1] * Y / 3 + a[1][1] * Y / 9
 
+        try:
+            self.delete(self.liste)
+        except:
+            None
+
         if case.valeur==0: #Dans le cas où la case est vide
             # Affichage du pokemon du joueur si le morpion est encore en jeu
             img = g.afficherImage((y + Y / 18) - 36, (x + X / 18) - 40, f"bw/{pokeindex[choix[0].name]}.png",
@@ -669,7 +679,7 @@ class jeu():
 
 
             elif choix[0]==res_fight[0]:#Le joueur actuel a gagné le combat
-
+                self.graph=self.animation_combat(res_fight[0],res_fight[1])
                 objet=g.recupererObjetDessous2(case.pokecoord[0]+35,case.pokecoord[1]+15)
                 g.supprimer(objet)
                 if pendule%2==0:
@@ -680,6 +690,7 @@ class jeu():
                     self.pokedispo1.append(case.pokemon)
 
             elif choix[0]==res_fight[1]:#Le joeur actuel a perdu le combat
+                self.graph=self.animation_combat(res_fight[0],res_fight[1])
                 objet = g.recupererObjetDessous2(choix[1]+35, choix[2]+15)
                 g.supprimer(objet)
 
@@ -741,6 +752,7 @@ class jeu():
         self.grille[dicrec[a[0]]].maj()
         self.grille[dicrec[a[1]]].maj()
 
+
         return prochain
     def verif_fin_jeu(self):
         for i in range(0,9,3):#On vérifie les lignes
@@ -756,7 +768,59 @@ class jeu():
 
         return False
 
+    def affichage_stats(self,pokemon):
+        graph=[g.afficherImage(0.05*X,Y*1.02,"nom.png"),g.afficherImage(X*0.4,Y*1.02,"Type 1.png"),g.afficherImage(X*0.7,Y*1.02,'Type 2.png'),
+               g.afficherImage(0.05*X,Y*1.14,"atck.png"),g.afficherImage(X*0.4,Y*1.14,"def.png"),g.afficherImage(X*0.7,Y*1.14,'vitesse.png'),g.afficherImage(0.35*X,Y*1.25,"pv.png")]
+        txt=[g.afficherTexte(pokemon.name,0.26*X,Y*1.06,"white",sizefont=22),g.afficherTexte(pokemon.type1,X*0.64,Y*1.06,sizefont=22),g.afficherTexte(pokemon.type2,X*0.94,Y*1.06,sizefont=22),
+             g.afficherTexte(pokemon.attack,0.3*X,Y*1.18,sizefont=22),g.afficherTexte(pokemon.defense,0.64*X,Y*1.18,sizefont=22),g.afficherTexte(pokemon.speed,0.94*X,Y*1.18,sizefont=22),
+             g.afficherTexte(pokemon.hp,0.49*X,01.28*Y,sizefont=22)]
+        return graph+txt
 
+    def animation_combat(self,pokemon1,pokemon2):#Le pokemon 1 est le vainqueur du combat
+        a = random.randint(0, 1)#Aléatoire pour le placement entre la droite et la gauche
+        reverse=False
+        if a == 1:
+            reverse = True
+
+        if reverse is True:
+            poke1=pokemon2
+            poke2=pokemon1
+        else:
+            poke1=pokemon1
+            poke2=pokemon2
+
+
+        graph=[g.afficherImage(0.16*X,1.02*Y,"cl.png"),g.afficherImage(0.45*X,1.15*Y,"vs.png")]
+        pokeimg1 = g.afficherImage(0.1 * X, Y * 1.1, f"bw/{pokeindex[poke1.name]}.png")
+        pokeimg2 = g.afficherImage(0.7 * X, 1.1 * Y, f"bw/{pokeindex[poke2.name]}.png")
+        graph.append(pokeimg1)
+        graph.append(pokeimg2)
+        g.actualiser()
+        g.attendreClic()
+        g.supprimer(graph[1])
+        graph.remove(graph[1])
+
+        for i in range (25):
+            g.actualiser()
+            time.sleep(0.01)
+            g.deplacer(pokeimg1,8,0)
+            g.deplacer(pokeimg2,-8,0)
+
+        g.supprimer(graph[0])
+        graph.remove(graph[0])
+        gg=g.afficherImage(0.3*X,1.05*Y,"vainqueur.png")
+        graph.append(gg)
+
+        if reverse:
+            g.supprimer(pokeimg1)
+            graph.remove(pokeimg1)
+        else:
+            g.supprimer(pokeimg2)
+            graph.remove(pokeimg2)
+
+        g.actualiser()
+
+        return graph
 
 
 
@@ -792,6 +856,11 @@ class jeu():
         except:
             None
         if o!=1:
+
+            try:
+                self.delete(self.graph)
+
+            except:None
             if o in self.dicgraph1 or o in self.dicgraph2:
                 if pendule%2==0:
                     try:
