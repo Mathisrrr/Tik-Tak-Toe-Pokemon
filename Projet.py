@@ -464,6 +464,7 @@ class jeu():
 
         self.graph2=[]
         self.dicgraph2={}
+        self.pokedispo2coord={}
         a=0
         for y in range(self.l + 1):
             for x in range(self.l):
@@ -478,6 +479,7 @@ class jeu():
                 coordy = y * self.tercy + (GY/2)+80
                 self.dicgraph2[img] = (self.roster_player2.pokemon_list[a],coordx,coordy)
                 self.pokedispo2.append(self.roster_player2.pokemon_list[a])
+                self.pokedispo2coord[self.roster_player2.pokemon_list[a]]=(coordx,coordy)
                 a += 1
 
 
@@ -821,18 +823,14 @@ class jeu():
         g.actualiser()
 
         return graph
-
-
-
-
-
     def jeu_en_duo(self):
         self.initgraph()
         self.remplissage()
         self.affichage_des_rosters()
 
         cpt = 0
-        while True:
+        a=True
+        while a:
             if cpt == 0:
                 ancien = self.tour(cpt)
             else:
@@ -841,12 +839,321 @@ class jeu():
             if self.verif_fin_jeu():
                 time.sleep(3)
                 g.supprimerGFX()
+                a=False
                 self.Menu()
             cpt += 1
 
-
     def jeu_vs_ia(self):
-        return None
+        self.initgraph()
+        self.remplissage()
+        self.affichage_des_rosters()
+        first=True
+        while True:
+            if first:
+                first=False
+                ancien=self.tour_joueur()
+            else:
+                ancien=self.tour_joueur(z=ancien)
+            self.tour_ia(ancien)
+
+    def tour_joueur(self,z=20,pendule=0): #On met pendule a 0 car on joue toujour le joueur 1, jamais le 2
+        o = 1
+
+        choix = self.choixpokemon(pendule)  # (Nom, coordx,coordy)
+        while choix is None:
+            choix = self.choixpokemon(pendule)
+        self.liste = self.affichage_stats(choix[0])
+
+        carre = g.dessinerRectangle(choix[1] + 20, choix[2], self.trecx - 50, self.tercy, 'grey')
+        g.placerAuDessous(carre)
+        try:
+            g.placerAuDessous(self.fond)
+        except:
+            None
+
+        while o == 1:
+            clic = g.attendreClic()
+            try:
+                o = g.recupererObjet(clic.x, clic.y)
+            except:
+                o = 1
+        while o in self.dicgraph1 :       #Sélection du pokemon
+            self.delete(self.liste)
+            try:
+                if self.dicgraph1[o][0] in self.pokedispo1:
+                    choix = self.dicgraph1[o]
+            except:None
+
+            self.liste=self.affichage_stats(choix[0])
+            g.supprimer(carre)
+            carre=g.dessinerRectangle(choix[1]+20,choix[2],self.trecx-50,self.tercy,'grey')
+            g.placerAuDessous(carre)
+            try:g.placerAuDessous(self.fond)
+            except:None
+            clic = g.attendreClic()
+            try:
+                o = g.recupererObjet(clic.x, clic.y)
+            except:
+                o = 1
+
+        good = True
+        while good:
+            if o != 1:
+
+                if (o in self.relation.keys() or o in self.poke_on_morpion.values()) and o not in self.case_plus_jouable:  # On vérifie que la case est en jeu
+                    if o in self.poke_on_morpion.values():
+                        o = g.recupererObjetDessous(clic.x, clic.y)
+
+                    a = self.relation[o]
+                    if pendule == 0 or self.verif == False:  # Si c'est le premier tour ou cas special, on peut jouer ou on veut
+                        self.case_occupe.append(o)
+                        case = self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]]
+
+                        good = False
+                    else:
+
+                        if self.grille[dicrec[a[0]]].actif == 1:  # On vérifie que la zone à jouer est active
+                            self.case_occupe.append(o)
+                            case = self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]]
+
+                            good = False
+                else:
+                    clic = g.attendreClic()
+                    try:
+                        o = g.recupererObjet(clic.x, clic.y)
+                    except:
+                        o = 1
+
+            if good is False:  # Si la case qu'on joue est jouable, il faut vérifier qu'on affronte une case vide ou adverse mais pas finie
+                if case.valeur == 3:
+                    good = True
+
+            if good is True:
+                clic = g.attendreClic()
+                try:
+                    o = g.recupererObjet(clic.x, clic.y)
+                except:
+                    o = 1
+        # On enlève le pokemon choisi de la liste des pokemons dispo:
+
+        self.pokedispo1.remove(choix[0])
+
+        # A partir d'ici, on est sur une case jouable donc elle est soit vide,soit déja prise par un pokemon: valeur=3 si joueur 1,4 si joueur 2
+        # Coordonée graphique
+        x = a[0][0] * X / 3 + a[1][0] * X / 9
+        y = a[0][1] * Y / 3 + a[1][1] * Y / 9
+
+        try:
+            self.delete(self.liste)
+        except:
+            None
+
+        if case.valeur == 0:  # Dans le cas où la case est vide
+            # Affichage du pokemon du joueur si le morpion est encore en jeu
+            img = g.afficherImage((y + Y / 18) - 36, (x + X / 18) - 40,
+                                  f"bw/{pokeindex[choix[0].name]}.png",
+                                  int((X / 9) * 1.2), int((Y / 9) * 1.2))
+            self.poke_on_morpion[a] = img
+
+            case.pokemon = choix[0]
+            case.pokecoord = (choix[1], choix[2])
+            case.valeur = 3
+
+        # Deuxième cas, il y a déjà un pokemon sur la case
+        else:
+
+
+            res_fight = combat(case.pokemon, choix[0])  # Gagnant en premier, perdant en deuxième
+            g.supprimer(self.poke_on_morpion[a])
+            del self.poke_on_morpion[a]
+
+            # Le pokemon perdant retourne dans la main, le gagnant disparait
+            if res_fight is None:  # Match nul, les deux pokemons retournes dans le deck
+                tab = [g.recupererObjetDessous2(choix[1] + 35, choix[2] + 15),
+                       g.recupererObjetDessous2(case.pokecoord[0] + 35, case.pokecoord[1] + 15)]
+                self.delete(tab)
+                self.pokedispo1.append(choix[0])
+                self.pokedispo2.append(case.pokemon)
+
+
+
+            elif choix[0] == res_fight[0]:  # Le joueur actuel a gagné le combat
+                self.graph = self.animation_combat(res_fight[0], res_fight[1])
+                objet = g.recupererObjetDessous2(case.pokecoord[0] + 35, case.pokecoord[1] + 15)
+                g.supprimer(objet)
+                case.valeur = 1
+                self.pokedispo2.append(case.pokemon)
+
+
+            elif choix[0] == res_fight[1]:  # Le joeur actuel a perdu le combat
+                self.graph = self.animation_combat(res_fight[0], res_fight[1])
+                objet = g.recupererObjetDessous2(choix[1] + 35, choix[2] + 15)
+                g.supprimer(objet)
+                case.valeur = 2
+                self.pokedispo1.append(choix[0])
+
+            if case.valeur == 1 or case.valeur == 2:
+                self.case_plus_jouable.append(case)
+                g.afficherTexte(ref[case.valeur], (y + Y / 18), (x + X / 18), "black", 50)
+
+
+
+
+        prochain = dicrec[a[1]]
+        if self.grille[prochain].valeur == 0:  # Si la zone du prochain coup est disponible
+
+            # On remet l'ancienne couleur et on met la nouvelle couleure dans la zone à jouer
+            if z != 20:
+                self.changement_de_couleur(dicrec[a[0]], "plum")
+            self.changement_de_couleur(dicrec[a[1]], 'slateblue')
+            self.verif = True
+
+            # On désactive l'ancien morpion et on active le prochain
+            self.grille[dicrec[a[0]]].actif = 0
+            self.grille[prochain].actif = 1
+
+        if self.grille[prochain].valeur != 0:  # Si la prochaine zone à jouer n'est pas disponible
+            self.changement_de_couleur(dicrec[a[0]], "plum")  # Alors on peut jouer n'importe ou sur le jeu
+            self.verif = False
+
+        # On vérifie si le petit morpion est terminé
+        petitmorpion = self.grille[dicrec[a[0]]]
+        if self.verif_morpion(petitmorpion):  # pas terminé
+            if case.valeur == 3:
+                g.changerCouleur(case.objet, "olivedrab")
+
+        else:  # On donne le grand morpion à un joueur
+            if petitmorpion.valeur == 1:
+                couleur = "olivedrab"
+            else:
+                couleur = "peru"
+            g.dessinerRectangle((a[0][1] * X / 3) + 2, (a[0][0] * Y / 3) + 2, (X / 3) - 4, (Y / 3) - 4, couleur)
+            g.afficherTexte(ref[petitmorpion.valeur], (a[0][1] * Y / 3) + Y / 6, (a[0][0] * X / 3) + X / 6, "black",
+                            100)
+            if self.grille[prochain].valeur != 0:
+                self.verif = False
+
+        # On remet de la couleur sur les cases déjà prise
+        self.grille[dicrec[a[0]]].maj()
+        self.grille[dicrec[a[1]]].maj()
+
+        return prochain
+
+    def tour_ia(self,z):
+        a=len(self.dicgraph2)
+        indice=random.randint(0,a)
+        pokemon=self.pokedispo2[indice]
+        choix=True          #tant qu'on a pas trouvé une case sur laquelle aller, la valeur est True
+        while choix is True:
+            if self.verif is False:     #On peut aller sur n'importe qu'elle case disponible dans la partie
+                gmorp=random.randint(0,8)
+                x,y=random.randint(0,2),random.randint(0,2)
+                if self.grille[gmorp].casier[x][y].valeur==0 or self.grille[gmorp].casier[x][y].valeur==3:
+                    case=self.grille[gmorp].casier[x][y]
+                    choix=False
+            else:#On peut jouer uniquement dans le petit morpion indiqué par le tour précédent
+                x,y=random.randint(0,2),random.randint(0,2)
+                if self.grille[z].casier[x][y].valeur==0 or self.grille[z].casier[x][y].valeur==3:
+                    case=self.grille[z].casier[x][y]
+                    choix=False
+        carre=g.dessinerRectangle(self.pokedispo2coord[pokemon][0]+20,self.pokedispo2coord[pokemon][1],self.trecx-50,self.tercy,'grey')
+        g.placerAuDessous(carre)
+        g.placerAuDessous(self.fond)
+        a=case.indice
+
+        x = a[0][0] * X / 3 + a[1][0] * X / 9
+        y = a[0][1] * Y / 3 + a[1][1] * Y / 9
+
+
+        #Maintenant qu'une case à été choisie, soit on pose le pokémon, soit on fait le combat
+
+        if case.valeur == 0:  # Dans le cas où la case est vide
+            # Affichage du pokemon du joueur si le morpion est encore en jeu
+            img = g.afficherImage((y + Y / 18) - 36, (x + X / 18) - 40,
+                                  f"bw/{pokeindex[pokemon.name]}.png",
+                                  int((X / 9) * 1.2), int((Y / 9) * 1.2))
+            self.poke_on_morpion[a] = img
+
+            case.pokemon = pokemon
+
+            case.pokecoord = (self.pokedispo2coord[pokemon][0],self.pokedispo2coord[pokemon][1])
+            case.valeur = 4
+
+        # Deuxième cas, il y a déjà un pokemon sur la case
+        else:
+            coordx,coordy=self.pokedispo2coord[pokemon][0],self.pokedispo2coord[pokemon][1]
+
+            res_fight = combat(case.pokemon, pokemon)  # Gagnant en premier, perdant en deuxième
+            g.supprimer(self.poke_on_morpion[a])
+            del self.poke_on_morpion[a]
+
+            # Le pokemon perdant retourne dans la main, le gagnant disparait
+            if res_fight is None:  # Match nul, les deux pokemons retournes dans le deck
+                tab = [g.recupererObjetDessous2(coordx + 35, coordy + 15),
+                       g.recupererObjetDessous2(case.pokecoord[0] + 35, case.pokecoord[1] + 15)]
+                self.delete(tab)
+                self.pokedispo1.append(pokemon)
+                self.pokedispo2.append(case.pokemon)
+
+            elif pokemon == res_fight[0]:  # Le joueur actuel a gagné le combat
+                self.graph = self.animation_combat(res_fight[0], res_fight[1])
+                objet = g.recupererObjetDessous2(case.pokecoord[0] + 35, case.pokecoord[1] + 15)
+                g.supprimer(objet)
+                case.valeur = 2
+                self.pokedispo1.append(case.pokemon)
+
+
+            elif pokemon == res_fight[1]:  # Le joeur actuel a perdu le combat
+                self.graph = self.animation_combat(res_fight[0], res_fight[1])
+                objet = g.recupererObjetDessous2(choix[1] + 35, choix[2] + 15)
+                g.supprimer(objet)
+                case.valeur = 1
+                self.pokedispo2.append(pokemon)
+
+            if case.valeur == 1 or case.valeur == 2:
+                self.case_plus_jouable.append(case)
+                g.afficherTexte(ref[case.valeur], (y + Y / 18), (x + X / 18), "black", 50)
+
+        prochain = dicrec[a[1]]
+        if self.grille[prochain].valeur == 0:  # Si la zone du prochain coup est disponible
+
+            # On remet l'ancienne couleur et on met la nouvelle couleure dans la zone à jouer
+            if z != 20:
+                self.changement_de_couleur(dicrec[a[0]], "plum")
+            self.changement_de_couleur(dicrec[a[1]], 'slateblue')
+            self.verif = True
+
+            # On désactive l'ancien morpion et on active le prochain
+            self.grille[dicrec[a[0]]].actif = 0
+            self.grille[prochain].actif = 1
+
+        if self.grille[prochain].valeur != 0:  # Si la prochaine zone à jouer n'est pas disponible
+            self.changement_de_couleur(dicrec[a[0]], "plum")  # Alors on peut jouer n'importe ou sur le jeu
+            self.verif = False
+
+        # On vérifie si le petit morpion est terminé
+        petitmorpion = self.grille[dicrec[a[0]]]
+        if self.verif_morpion(petitmorpion):  # pas terminé
+            if case.valeur == 4:
+                g.changerCouleur(case.objet, "olivedrab")
+
+        else:  # On donne le grand morpion à un joueur
+            if petitmorpion.valeur == 1:
+                couleur = "olivedrab"
+            else:
+                couleur = "peru"
+            g.dessinerRectangle((a[0][1] * X / 3) + 2, (a[0][0] * Y / 3) + 2, (X / 3) - 4, (Y / 3) - 4, couleur)
+            g.afficherTexte(ref[petitmorpion.valeur], (a[0][1] * Y / 3) + Y / 6, (a[0][0] * X / 3) + X / 6, "black",
+                            100)
+            if self.grille[prochain].valeur != 0:
+                self.verif = False
+
+        # On remet de la couleur sur les cases déjà prise
+        self.grille[dicrec[a[0]]].maj()
+        self.grille[dicrec[a[1]]].maj()
+
+        return prochain
+
 
     def choixpokemon(self,pendule):
         o=1
