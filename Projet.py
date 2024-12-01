@@ -253,6 +253,7 @@ class Case():
         self.valeur=0
         self.objet=objet
         self.pokemon=0
+        self.pokecoord=(0,0)
 
 class jeu():
     def __init__(self):
@@ -262,7 +263,7 @@ class jeu():
         self.relation={}
         self.case_plus_jouable=[]
         self.verif=True
-        self.num_pokemon=20
+        self.num_pokemon=60
         self.case_occupe=[]
         self.poke_on_morpion={}
 
@@ -275,10 +276,9 @@ class jeu():
     def Menu(self):                     #Cette fontion est la première qui est appelés quand on lance le jeu après l'ouverture de la fenêtre,
                                         #Elle permet au joueur d'entrer dans le jeu
         self.fond=g.afficherImage(0, 0, "fond.jpg", GX, GY)
-        text = [g.afficherTexte("Bienvenue dans le jeu Poké-Tac-Toe", GX / 2, 2 * GY / 5, "Black", int(GX / 22)),
-                g.afficherTexte("Cliquez sur l'image pour afficher les modes de jeu", GX / 2, GY / 2, 'Black',
-                                     int(GX / 30)),
-                g.afficherImage(0.3*GX, 0.6*GY, "Titre.png")]
+        text = [g.afficherImage(0.20*GX,0.35*GY,"T1.png"),
+                g.afficherImage(0.15*GX,0.55*GY,"T2.png"),
+                g.afficherImage(0.3*GX, 0.7*GY, "Titre.png")]
 
         a = True
         while a:
@@ -315,7 +315,7 @@ class jeu():
         a=True
 
         text2 = g.afficherTexte(f"{self.num_pokemon}", 0.5 * GX, 0.80 * GY, "Orange", int(GX / 8))
-        graph=[g.afficherImage(0.2*GX,GY/2,"nb pok.png"),g.afficherImage(0.02*GX,0.05*GY,'Retour.png'),text2,g.afficherImage(0.7*GX,0.85*GY,"max.png")]
+        graph=[g.afficherImage(0.2*GX,GY/2,"nb pok.png"),g.afficherImage(0.02*GX,0.05*GY,'Retour.png'),text2,g.afficherImage(0.7*GX,0.85*GY,"max.png"),g.afficherImage(0.7*GX,0.75*GY,'min.png')]
 
         while a:
             o=1
@@ -370,7 +370,7 @@ class jeu():
 
             g.changerTexte(text, f"{val}")
 
-        if val == "" or int(val)>80:
+        if val == "" or int(val)>80 or int(val)<25:
             g.changerTexte(text, f"{ancien}")
             return ancien
         else:
@@ -405,10 +405,14 @@ class jeu():
 
         g.afficherImage(X+sx/2.5,GY/30,"J1.png",200,50)
         g.afficherImage(X+sx/2.5,GY/1.9,"J2.png",200,50)
+        g.afficherImage(X+sx/40,0.02*GY,'explique.png')
         j1_col=g.dessinerRectangle(X+0.38*sx,GY/35,0.30*sx,0.1*Y,'olivedrab')
         g.placerAuDessous(j1_col)
         j2_col = g.dessinerRectangle(X + 0.38 * sx, 0.52*GY, 0.30 * sx, 0.1 * Y, 'peru')
         g.placerAuDessous(j2_col)
+        try :
+            g.placerAuDessous(self.fond)
+        except:None
 
     def calcul_opti(self):
         if self.num_pokemon % sqrt(self.num_pokemon) == 0:  # Affiche optimal si carré parfait
@@ -440,7 +444,8 @@ class jeu():
         self.roster_player1.print_roster()
         print("\nRoster joueur 2:")
         self.roster_player2.print_roster()
-
+        self.pokedispo1=[]
+        self.pokedispo2=[]
         self.graph1=[]
         self.dicgraph1={}
         a=0
@@ -454,6 +459,7 @@ class jeu():
                 coordx=x*self.trecx+X+40
                 coordy=y*self.tercy+Y/8+20
                 self.dicgraph1[img]=(self.roster_player1.pokemon_list[a],coordx,coordy)
+                self.pokedispo1.append(self.roster_player1.pokemon_list[a])
                 a+=1
 
         self.graph2=[]
@@ -471,7 +477,9 @@ class jeu():
                 coordx = x * self.trecx + X + 40
                 coordy = y * self.tercy + (GY/2)+80
                 self.dicgraph2[img] = (self.roster_player2.pokemon_list[a],coordx,coordy)
+                self.pokedispo2.append(self.roster_player2.pokemon_list[a])
                 a += 1
+
 
 
 
@@ -550,14 +558,18 @@ class jeu():
                 o=1
 
         while o in self.dicgraph1 or o in self.dicgraph2:       #Sélection du pokemon
-
+            print("yessss")
             if pendule % 2 == 0:
-                if o in self.dicgraph1:
-                    choix = self.dicgraph1[o]
+                try:
+                    if self.dicgraph1[o][0] in self.pokedispo1:
+                        choix = self.dicgraph1[o]
+                except:None
 
             else:
-                if o in self.dicgraph2:
-                    choix = self.dicgraph2[o]
+                try:
+                    if self.dicgraph2[o][0] in self.pokedispo2:
+                        choix = self.dicgraph2[o]
+                except:None
             g.supprimer(carre)
             carre=g.dessinerRectangle(choix[1]+20,choix[2],self.trecx-50,self.tercy,'grey')
             g.placerAuDessous(carre)
@@ -570,9 +582,7 @@ class jeu():
                 o = 1
         good=True
         while good:
-
             if o!=1:
-
 
                 if (o in self.relation.keys() or o in self.poke_on_morpion.values()) and o not in self.case_plus_jouable: #On vérifie que la case est en jeu
                     if o in self.poke_on_morpion.values():
@@ -591,6 +601,12 @@ class jeu():
                             case = self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]]
 
                             good = False
+                else:
+                    clic = g.attendreClic()
+                    try:
+                        o = g.recupererObjet(clic.x, clic.y)
+                    except:
+                        o = 1
 
             if good is False:#Si la case qu'on joue est jouable, il faut vérifier qu'on affronte une case vide ou adverse mais pas finie
                 if pendule%2==0:
@@ -602,12 +618,18 @@ class jeu():
 
                         good=True
 
-            else:
-                    clic=g.attendreClic()
-                    try :
-                        o = g.recupererObjet(clic.x, clic.y)
-                    except:
-                        o=1
+            if good is True:
+                clic=g.attendreClic()
+                try :
+                    o = g.recupererObjet(clic.x, clic.y)
+                except:
+                    o=1
+        #On enlève le pokemon choisi de la liste des pokemons dispo:
+        if pendule%2==0:
+            self.pokedispo1.remove(choix[0])
+        else:
+            self.pokedispo2.remove(choix[0])
+
         #A partir d'ici, on est sur une case jouable donc elle est soit vide,soit déja prise par un pokemon: valeur=3 si joueur 1,4 si joueur 2
         # Coordonée graphique
         x = a[0][0] * X / 3 + a[1][0] * X / 9
@@ -618,11 +640,12 @@ class jeu():
             img = g.afficherImage((y + Y / 18) - 36, (x + X / 18) - 40, f"bw/{pokeindex[choix[0].name]}.png",
                                   int((X / 9) * 1.2), int((Y / 9) * 1.2))
             self.poke_on_morpion[a] = img
+
+            case.pokemon = choix[0]
+            case.pokecoord = (choix[1], choix[2])
             if pendule%2==0:
-                case.pokemon=choix[0]
                 case.valeur = 3
             else:
-                case.pokemon=choix[0]
                 case.valeur = 4
 
         #Deuxième cas, il y a déjà un pokemon sur la case
@@ -635,26 +658,47 @@ class jeu():
 
             #Le pokemon perdant retourne dans la main, le gagnant disparait
             if res_fight is None:#Match nul, les deux pokemons retournes dans le deck
-                None
+                tab = [g.recupererObjetDessous2(choix[1]+35, choix[2]+15),g.recupererObjetDessous2(case.pokecoord[0]+35,case.pokecoord[1]+15)]
+                self.delete(tab)
+                if pendule%2==0:
+                    self.pokedispo1.append(choix[0])
+                    self.pokedispo2.append(case.pokemon)
+                else:
+                    self.pokedispo1.append(case.pokemon)
+                    self.pokedispo2.append(choix[0])
+
+
             elif choix[0]==res_fight[0]:#Le joueur actuel a gagné le combat
+
+                objet=g.recupererObjetDessous2(case.pokecoord[0]+35,case.pokecoord[1]+15)
+                g.supprimer(objet)
                 if pendule%2==0:
                     case.valeur=1
+                    self.pokedispo2.append(case.pokemon)
+                else:
+                    case.valeur=2
+                    self.pokedispo1.append(case.pokemon)
+
+            elif choix[0]==res_fight[1]:#Le joeur actuel a perdu le combat
+                objet = g.recupererObjetDessous2(choix[1]+35, choix[2]+15)
+                g.supprimer(objet)
+
+                if pendule%2==0:
+                    case.valeur=2
+                    self.pokedispo1.append(choix[0])
 
                 else:
-                    case.valeur=2
-            elif choix[0]==res_fight[1]:#Le joeur actuel a perdu le combat
-                if pendule%2==0:
-                    case.valeur=2
-                else:
                     case.valeur=1
+                    self.pokedispo2.append(choix[0])
+
             if case.valeur==1 or case.valeur==2:
                 self.case_plus_jouable.append(case)
-            g.afficherTexte(ref[case.valeur], (y + Y / 18), (x + X / 18), "black", 50)
+                g.afficherTexte(ref[case.valeur], (y + Y / 18), (x + X / 18), "black", 50)
 
 
 
         prochain = dicrec[a[1]]
-        if self.grille[prochain].valeur==0: #Si la zone du prochaain coup est disponible
+        if self.grille[prochain].valeur==0: #Si la zone du prochain coup est disponible
 
             #On remet l'ancienne couleur et on met la nouvelle couleure dans la zone à jouer
             if z!= 20:
@@ -748,14 +792,19 @@ class jeu():
         except:
             None
         if o!=1:
-            if pendule%2==0:
-                if o in self.graph1:
-                    choix=self.dicgraph1[o]
-                    return choix
-            else:
-                if o in self.graph2:
-                    choix=self.dicgraph2[o]
-                    return choix
+            if o in self.dicgraph1 or o in self.dicgraph2:
+                if pendule%2==0:
+                    try:
+                        if self.dicgraph1[o][0] in self.pokedispo1:
+                            choix=self.dicgraph1[o]
+                            return choix
+                    except:None
+                else:
+                    try:
+                        if self.dicgraph2[o][0] in self.pokedispo2:
+                            choix=self.dicgraph2[o]
+                            return choix
+                    except:None
         self.choixpokemon(pendule)
 
 

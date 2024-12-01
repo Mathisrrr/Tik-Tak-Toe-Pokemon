@@ -123,6 +123,12 @@ class Canevas(tk.Canvas):
             return ObjetGraphique.annuaire[ido[-3]]  # Retourne l'objet en dessous
         return None
 
+    def recupererObjetDessous2(self, x, y):
+        ido = self.find_overlapping(x, y, x, y)
+        if len(ido) > 1:  # Vérifie qu'il y a des objets superposés
+            return ObjetGraphique.annuaire[ido[1]]  # Retourne l'objet en dessous
+        return None
+
 
 ################################################################################
 # EVENEMENTS
