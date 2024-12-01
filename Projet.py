@@ -1,3 +1,5 @@
+import time
+
 from tkiteasy import *
 import numpy as np
 import pandas as pd
@@ -8,6 +10,8 @@ from math import *
 #on crée le dataframe
 pokemon_df = pd.read_csv("pokemon2.csv")
 pokemon_df['Level'] = 1
+#Dictionnaire qui permet de vérfier si un morpion est gagné:
+verification={0:0,1:1,2:2,3:1,4:2}
 
 #Dictionnaire qui associe le nom du pokemon à son numéro
 
@@ -41,14 +45,15 @@ def combat(pokemon1, pokemon2):  # 1v1 entre les Pokémon
 
     if pokemon1.hp <= 0 and pokemon2.hp <= 0:
         print("Égalité")
+        return None
     elif pokemon1.hp <= 0:
         print(f"{pokemon2.name} a gagné")
         pokemon2.level += 1
-        return pokemon2
+        return pokemon2,pokemon1
     else:
         print(f"{pokemon1.name} a gagné")
         pokemon1.level += 1
-        return pokemon1
+        return pokemon1,pokemon2
 
 
 #proba que le poke 2 dodge l'attaque du poke 1
@@ -73,13 +78,13 @@ def attack(pokemon1, pokemon2):
     return pv_perdu
 
 def round_combat(pokemon1, pokemon2):
-    if dodge(pokemon1) == 'dodge':
+    if dodge(pokemon2,pokemon1) == 'dodge':
         print(f"{pokemon1.name} a esquivé l'attaque, il lui reste {pokemon1.hp} pv")
     else:
         pokemon1.hp -= attack(pokemon2, pokemon1)
         print(f"{pokemon1.name} a pris {attack(pokemon2,pokemon1)} degats, il lui reste {pokemon1.hp} pv")
 
-    if dodge(pokemon2)=='dodge':
+    if dodge(pokemon1,pokemon2)=='dodge':
         print(f"{pokemon2.name} a esquivé l'attaque, il lui reste {pokemon2.hp} pv")
     else:
         pokemon2.hp -= attack(pokemon1, pokemon2)
@@ -236,9 +241,9 @@ class Morpion() :
         for ligne in self.casier:
             for case in ligne :
 
-                if case.valeur==3:
+                if case.valeur==3 or case.valeur==1:
                     g.changerCouleur(case.objet,"olivedrab")
-                elif case.valeur==4:
+                elif case.valeur==4 or case.valeur==2:
                     g.changerCouleur(case.objet,"peru")
 
 
@@ -259,7 +264,7 @@ class jeu():
         self.verif=True
         self.num_pokemon=20
         self.case_occupe=[]
-        self.poke_on_morpion=[]
+        self.poke_on_morpion={}
 
 
 
@@ -269,7 +274,7 @@ class jeu():
 
     def Menu(self):                     #Cette fontion est la première qui est appelés quand on lance le jeu après l'ouverture de la fenêtre,
                                         #Elle permet au joueur d'entrer dans le jeu
-        g.afficherImage(0, 0, "fond.jpg", GX, GY)
+        self.fond=g.afficherImage(0, 0, "fond.jpg", GX, GY)
         text = [g.afficherTexte("Bienvenue dans le jeu Poké-Tac-Toe", GX / 2, 2 * GY / 5, "Black", int(GX / 22)),
                 g.afficherTexte("Cliquez sur l'image pour afficher les modes de jeu", GX / 2, GY / 2, 'Black',
                                      int(GX / 30)),
@@ -448,7 +453,7 @@ class jeu():
                 self.graph1.append(img)
                 coordx=x*self.trecx+X+40
                 coordy=y*self.tercy+Y/8+20
-                self.dicgraph1[img]=(self.roster_player1.pokemon_list[a].name,coordx,coordy)
+                self.dicgraph1[img]=(self.roster_player1.pokemon_list[a],coordx,coordy)
                 a+=1
 
         self.graph2=[]
@@ -465,7 +470,7 @@ class jeu():
                 self.graph2.append(img)
                 coordx = x * self.trecx + X + 40
                 coordy = y * self.tercy + (GY/2)+80
-                self.dicgraph2[img] = (self.roster_player2.pokemon_list[a].name,coordx,coordy)
+                self.dicgraph2[img] = (self.roster_player2.pokemon_list[a],coordx,coordy)
                 a += 1
 
 
@@ -487,42 +492,39 @@ class jeu():
             for j in range(3):
                 g.changerCouleur(self.grille[k].casier[i][j].objet,couleur)
 
-    def verif_morpion(self,morpion,pendule):
+    def verif_morpion(self,morpion):
         en_jeu=True
 
         #Vérification des lignes
         for ligne in range (3):
-            if morpion.casier[ligne][0].valeur == morpion.casier[ligne][1].valeur == morpion.casier[ligne][2].valeur and morpion.casier[ligne][0].valeur != 0:
-
+            if verification[morpion.casier[ligne][0].valeur] == verification[morpion.casier[ligne][1].valeur] == verification[morpion.casier[ligne][2].valeur] and verification[morpion.casier[ligne][0].valeur] != 0:
+                val=verification[morpion.casier[ligne][0].valeur]
                 morpion.game=False
                 en_jeu = False
 
 
         #Vérification des colonnes
         for colonne in range (3):
-            if morpion.casier[0][colonne].valeur == morpion.casier[1][colonne].valeur == morpion.casier[2][colonne].valeur and morpion.casier[0][colonne].valeur != 0:
-
+            if verification[morpion.casier[0][colonne].valeur] == verification[morpion.casier[1][colonne].valeur] == verification[morpion.casier[2][colonne].valeur] and verification[morpion.casier[0][colonne].valeur] != 0:
+                val=verification[morpion.casier[0][colonne].valeur]
                 morpion.game=False
                 en_jeu = False
 
 
         #Vérification des diagonales
-        if morpion.casier[0][0].valeur==morpion.casier[1][1].valeur==morpion.casier[2][2].valeur and morpion.casier[0][0].valeur!=0:
-
+        if verification[morpion.casier[0][0].valeur]==verification[morpion.casier[1][1].valeur]==verification[morpion.casier[2][2].valeur] and verification[morpion.casier[0][0].valeur]!=0:
+            val=verification[morpion.casier[0][0].valeur]
             morpion.game = False
             en_jeu = False
 
 
-        if morpion.casier[0][2].valeur==morpion.casier[1][1].valeur==morpion.casier[2][0].valeur and morpion.casier[1][1].valeur!=0:
-
+        if verification[morpion.casier[0][2].valeur]==verification[morpion.casier[1][1].valeur]==verification[morpion.casier[2][0].valeur] and verification[morpion.casier[1][1].valeur]!=0:
+            val=verification[morpion.casier[0][2].valeur]
             morpion.game = False
             en_jeu = False
 
         if en_jeu is False:
-            if pendule%2==0:
-                morpion.valeur=1
-            else:
-                morpion.valeur=2
+            morpion.valeur=val
 
         return en_jeu
 
@@ -537,6 +539,8 @@ class jeu():
 
         carre=g.dessinerRectangle(choix[1]+20,choix[2],self.trecx-50,self.tercy,'grey')
         g.placerAuDessous(carre)
+        try:g.placerAuDessous(self.fond)
+        except:None
 
         while o ==1:
             clic = g.attendreClic()
@@ -557,22 +561,23 @@ class jeu():
             g.supprimer(carre)
             carre=g.dessinerRectangle(choix[1]+20,choix[2],self.trecx-50,self.tercy,'grey')
             g.placerAuDessous(carre)
+            try:g.placerAuDessous(self.fond)
+            except:None
             clic = g.attendreClic()
             try:
                 o = g.recupererObjet(clic.x, clic.y)
             except:
                 o = 1
-
-
         good=True
-
         while good:
 
             if o!=1:
 
-                if (o in self.relation.keys() or o in self.poke_on_morpion) and o not in self.case_plus_jouable: #On vérifie que la case est en jeu
-                    if o in self.poke_on_morpion:
+
+                if (o in self.relation.keys() or o in self.poke_on_morpion.values()) and o not in self.case_plus_jouable: #On vérifie que la case est en jeu
+                    if o in self.poke_on_morpion.values():
                         o=g.recupererObjetDessous(clic.x,clic.y)
+
                     a = self.relation[o]
                     if pendule == 0 or self.verif == False:             #Si c'est le premier tour ou cas special, on peut jouer ou on veut
                         self.case_occupe.append(o)
@@ -587,7 +592,7 @@ class jeu():
 
                             good = False
 
-            if good is False:#Si la case qu'on joue est jouable, il faut vérifier qu'on affronte une case vide ou adverse
+            if good is False:#Si la case qu'on joue est jouable, il faut vérifier qu'on affronte une case vide ou adverse mais pas finie
                 if pendule%2==0:
                     if case.valeur==3:
 
@@ -604,8 +609,15 @@ class jeu():
                     except:
                         o=1
         #A partir d'ici, on est sur une case jouable donc elle est soit vide,soit déja prise par un pokemon: valeur=3 si joueur 1,4 si joueur 2
+        # Coordonée graphique
+        x = a[0][0] * X / 3 + a[1][0] * X / 9
+        y = a[0][1] * Y / 3 + a[1][1] * Y / 9
 
         if case.valeur==0: #Dans le cas où la case est vide
+            # Affichage du pokemon du joueur si le morpion est encore en jeu
+            img = g.afficherImage((y + Y / 18) - 36, (x + X / 18) - 40, f"bw/{pokeindex[choix[0].name]}.png",
+                                  int((X / 9) * 1.2), int((Y / 9) * 1.2))
+            self.poke_on_morpion[a] = img
             if pendule%2==0:
                 case.pokemon=choix[0]
                 case.valeur = 3
@@ -615,18 +627,34 @@ class jeu():
 
         #Deuxième cas, il y a déjà un pokemon sur la case
         else:
-            print('test,',choix[0])
-            print(case.pokemon,choix[0],'"bzdcbzbczibczicbzibcziobcozicbozbocz')
-            fight=combat(case.pokemon,choix[0])
-            print(fight,"combat")
 
 
+            res_fight=combat(case.pokemon,choix[0])#Gagnant en premier, perdant en deuxième
+            g.supprimer(self.poke_on_morpion[a])
+            del self.poke_on_morpion[a]
 
-        x=a[0][0]*X/3+a[1][0]*X/9
-        y=a[0][1]*Y/3+a[1][1]*Y/9
+            #Le pokemon perdant retourne dans la main, le gagnant disparait
+            if res_fight is None:#Match nul, les deux pokemons retournes dans le deck
+                None
+            elif choix[0]==res_fight[0]:#Le joueur actuel a gagné le combat
+                if pendule%2==0:
+                    case.valeur=1
+
+                else:
+                    case.valeur=2
+            elif choix[0]==res_fight[1]:#Le joeur actuel a perdu le combat
+                if pendule%2==0:
+                    case.valeur=2
+                else:
+                    case.valeur=1
+            if case.valeur==1 or case.valeur==2:
+                self.case_plus_jouable.append(case)
+            g.afficherTexte(ref[case.valeur], (y + Y / 18), (x + X / 18), "black", 50)
+
+
 
         prochain = dicrec[a[1]]
-        if self.grille[prochain].valeur==0: #Si la zone où l'on veut jouer est disponible
+        if self.grille[prochain].valeur==0: #Si la zone du prochaain coup est disponible
 
             #On remet l'ancienne couleur et on met la nouvelle couleure dans la zone à jouer
             if z!= 20:
@@ -639,12 +667,13 @@ class jeu():
             self.grille[prochain].actif=1
 
         if self.grille[prochain].valeur!=0:#Si la prochaine zone à jouer n'est pas disponible
-            self.changement_de_couleur(dicrec[a[0]], "plum")
+            self.changement_de_couleur(dicrec[a[0]], "plum") #Alors on peut jouer n'importe ou sur le jeu
             self.verif=False
 
 
         #On vérifie si le petit morpion est terminé
-        if self.verif_morpion(self.grille[dicrec[a[0]]],pendule):#pas terminé
+        petitmorpion = self.grille[dicrec[a[0]]]
+        if self.verif_morpion(petitmorpion):#pas terminé
 
             if case.valeur==3:
                 g.changerCouleur(case.objet, "olivedrab")
@@ -652,14 +681,14 @@ class jeu():
                 g.changerCouleur(case.objet, "peru")
 
 
-
-            # Affichage du pokemon du joueur si le morpion est encore en jeu
-            img=g.afficherImage((y + Y / 18)-36, (x + X / 18)-40,f"bw/{pokeindex[choix[0]]}.png",int((X/9)*1.2),int((Y/9)*1.2))
-            self.poke_on_morpion.append(img)
-           # g.afficherTexte(ref[self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]].valeur], y + Y / 18, x + X / 18,'black', 30)
         else:#On donne le grand morpion à un joueur
-            g.dessinerRectangle((a[0][1]*X/3)+2,(a[0][0]*Y/3)+2,(X/3)-4,(Y/3)-4,'light blue')
-            g.afficherTexte(ref[self.grille[dicrec[a[0]]].valeur],(a[0][1]*Y/3)+Y/6,(a[0][0]*X/3)+X/6,"black",100)
+
+            if petitmorpion.valeur==1:
+                couleur="olivedrab"
+            else:
+                couleur="peru"
+            g.dessinerRectangle((a[0][1]*X/3)+2,(a[0][0]*Y/3)+2,(X/3)-4,(Y/3)-4,couleur)
+            g.afficherTexte(ref[petitmorpion.valeur],(a[0][1]*Y/3)+Y/6,(a[0][0]*X/3)+X/6,"black",100)
             if self.grille[prochain].valeur!=0:
 
                 self.verif=False
@@ -669,22 +698,19 @@ class jeu():
         self.grille[dicrec[a[1]]].maj()
 
         return prochain
+    def verif_fin_jeu(self):
+        for i in range(0,9,3):#On vérifie les lignes
+            if self.grille[i].valeur==self.grille[i+1].valeur==self.grille[i+2].valeur and self.grille[i].valeur!=0:
+                return True
+        for i in range(3):#On vérifie les colonnes
+            if self.grille[i].valeur == self.grille[i + 3].valeur == self.grille[i + 6].valeur and self.grille[i].valeur != 0:
+                return True
+        if self.grille[0].valeur==self.grille[4].valeur==self.grille[8].valeur and self.grille[4].valeur!=0:#Première diag
+            return True
+        if self.grille[2].valeur==self.grille[4].valeur==self.grille[6].valeur and self.grille[4].valeur!=0:#Deuxième diag
+            return True
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return False
 
 
 
@@ -696,6 +722,7 @@ class jeu():
         self.initgraph()
         self.remplissage()
         self.affichage_des_rosters()
+
         cpt = 0
         while True:
             if cpt == 0:
@@ -703,7 +730,12 @@ class jeu():
             else:
 
                 ancien = self.tour(cpt, ancien)
+            if self.verif_fin_jeu():
+                time.sleep(3)
+                g.supprimerGFX()
+                self.Menu()
             cpt += 1
+
 
     def jeu_vs_ia(self):
         return None
@@ -726,20 +758,10 @@ class jeu():
                     return choix
         self.choixpokemon(pendule)
 
-    def changement_pokemon(self):
-        return None
-
-
-
-
-
-
 
 poke=jeu()
-poke.jeu_en_duo()
+#poke.jeu_en_duo()
 poke.Menu()
 
 g.attendreClic()
 g.fermerFenetre()
-
-
