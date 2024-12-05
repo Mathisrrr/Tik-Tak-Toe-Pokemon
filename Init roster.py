@@ -9,7 +9,7 @@ from collections import Counter
 
 
 #VARIABLES GLOBALES
-nb_pokemon = 10
+nb_pokemon = 60
 
 #on crée le dataframe
 pokemon_df = pd.read_csv("pokemon2.csv")
@@ -216,16 +216,14 @@ class Jeu:
     #fonction pour équilibrer le nb de pokemons de même type dans les équipes
     def equilibrer_types(self, roster1, roster2):
         print("\nEquilibrage selon les types :\n")
-        #on récupère tous les types des Pokémon dans les deux équipes
-        #équipe 1
+        # Récupérer tous les types des Pokémon dans les deux équipes
         types_roster1 = []
         for pokemon in roster1.pokemon_list:
-            types_roster1.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])  # Ajouter tous les types de chaque Pokémon à la liste et on enleve les types = ""
+            types_roster1.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])
 
-        # Récupérer tous les types des Pokémon dans l'équipe 2
         types_roster2 = []
         for pokemon in roster2.pokemon_list:
-            types_roster2.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])  # Ajouter tous les types de chaque Pokémon à la liste
+            types_roster2.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])
 
         # Compter les occurrences des types dans chaque équipe
         count_types_equipe1 = Counter(types_roster1)
@@ -235,29 +233,37 @@ class Jeu:
         print("Types dans l'équipe 1:", count_types_equipe1)
         print("Types dans l'équipe 2:", count_types_equipe2)
 
-        # Identifier les types qui sont trop présents dans une équipe par rapport à l'autre
+        # Identifier les types qui sont trop présents
         for type_ in set(types_roster1 + types_roster2):
             difference = count_types_equipe1[type_] - count_types_equipe2[type_]
 
-            # Si la différence est positive, équipe 1 a trop de Pokémon de ce type
-            if difference > 1: #si on a un nb impair de pokemon du type X, il y aura une équipe qui en a 1 de plus forcement
+            if difference > 1:
                 print(f"Le type {type_} est trop présent dans le roster 1")
-                # Trouver les Pokémon de ce type dans l'équipe 1
-                pokemons_a_deplacer = [pokemon for pokemon in roster1.pokemon_list if type_ in [pokemon.type1, pokemon.type2]]
-                for pokemon in pokemons_a_deplacer[:difference // 2]:  # On déplace la moitié de la différence
+                pokemons_a_deplacer = [pokemon for pokemon in roster1.pokemon_list if
+                                       type_ in [pokemon.type1, pokemon.type2]]
+                for pokemon in pokemons_a_deplacer[:difference // 2]:
                     roster1.pokemon_list.remove(pokemon)
                     roster2.pokemon_list.append(pokemon)
 
-            # Si la différence est négative, équipe 2 a trop de Pokémon de ce type
             elif difference < -1:
                 print(f"Le type {type_} est trop présent dans le roster 2")
-                # Trouver les Pokémon de ce type dans l'équipe 2
-                pokemons_a_deplacer = [pokemon for pokemon in roster2.pokemon_list if type_ in [pokemon.type1, pokemon.type2]]
+                pokemons_a_deplacer = [pokemon for pokemon in roster2.pokemon_list if
+                                       type_ in [pokemon.type1, pokemon.type2]]
                 for pokemon in pokemons_a_deplacer[:(-difference) // 2]:
                     roster2.pokemon_list.remove(pokemon)
                     roster1.pokemon_list.append(pokemon)
 
-        # Retourner les équipes après rééquilibrage
+        # Ajustement des tailles des équipes
+        while len(roster1.pokemon_list) > len(roster2.pokemon_list):
+            pokemon = random.choice(roster1.pokemon_list)
+            roster1.pokemon_list.remove(pokemon)
+            roster2.pokemon_list.append(pokemon)
+
+        while len(roster2.pokemon_list) > len(roster1.pokemon_list):
+            pokemon = random.choice(roster2.pokemon_list)
+            roster2.pokemon_list.remove(pokemon)
+            roster1.pokemon_list.append(pokemon)
+
         print("\nEquilibrage selon les types fini")
         return roster1, roster2
 
