@@ -280,6 +280,7 @@ class jeu():
                 g.afficherImage(0.15*GX,0.55*GY,"T2.png"),
                 g.afficherImage(0.3*GX, 0.7*GY, "Titre.png")]
 
+
         a = True
         while a:
             clic = g.attendreClic()
@@ -756,19 +757,33 @@ class jeu():
 
 
         return prochain
+
+    def returnval(self,i):
+        if self.grille[i].valeur == 1:
+            val = 1
+        else:
+            val = 2
+        return val
     def verif_fin_jeu(self):
+        val=0
+        fin=False
         for i in range(0,9,3):#On vérifie les lignes
+
             if self.grille[i].valeur==self.grille[i+1].valeur==self.grille[i+2].valeur and self.grille[i].valeur!=0:
-                return True
+                fin=True
+                val=self.returnval(i)
         for i in range(3):#On vérifie les colonnes
             if self.grille[i].valeur == self.grille[i + 3].valeur == self.grille[i + 6].valeur and self.grille[i].valeur != 0:
-                return True
+                fin=True
+                val=self.returnval(i)
         if self.grille[0].valeur==self.grille[4].valeur==self.grille[8].valeur and self.grille[4].valeur!=0:#Première diag
-            return True
+            fin=True
+            val=self.returnval(0)
         if self.grille[2].valeur==self.grille[4].valeur==self.grille[6].valeur and self.grille[4].valeur!=0:#Deuxième diag
-            return True
+            fin=True
+            val=self.returnval(2)
 
-        return False
+        return (fin,val)
 
     def affichage_stats(self,pokemon):
         graph=[g.afficherImage(0.05*X,Y*1.02,"nom.png"),g.afficherImage(X*0.4,Y*1.02,"Type 1.png"),g.afficherImage(X*0.7,Y*1.02,'Type 2.png'),
@@ -836,7 +851,16 @@ class jeu():
             else:
 
                 ancien = self.tour(cpt, ancien)
-            if self.verif_fin_jeu():
+            fin_du_jeu=self.verif_fin_jeu()
+            if fin_du_jeu[0] is True:
+                g.afficherImage(GX / 3, GY / 2, "Merci.png")
+                if fin_du_jeu[1]==1:
+                    g.afficherImage(0.01 * GX, 0.2 * GY, 'j1win.png')
+                else:
+                    g.afficherImage(0.01 * GX, 0.2 * GY, 'j2win.png')
+
+                g.afficherImage(GX/2,GY/2,"Merci.png")
+                g.actualiser()
                 time.sleep(3)
                 g.supprimerGFX()
                 a=False
@@ -844,17 +868,35 @@ class jeu():
             cpt += 1
 
     def jeu_vs_ia(self):
+        a=True
         self.initgraph()
         self.remplissage()
         self.affichage_des_rosters()
         first=True
-        while True:
+        self.verif=False
+        while a:
             if first:
                 first=False
                 ancien=self.tour_joueur()
             else:
-                ancien=self.tour_joueur(z=ancien)
-            self.tour_ia(ancien)
+                ancien=self.tour_joueur(ancien)
+            try:maj=self.tour_ia(ancien,maj)
+            except:maj=self.tour_ia(ancien)#Pour le premier tour
+            fin_du_jeu = self.verif_fin_jeu()
+            if fin_du_jeu[0] is True:
+                g.afficherImage(GX / 3, GY / 2, "Merci.png")
+                if fin_du_jeu[1] == 1:
+                    g.afficherImage(0.01 * GX, 0.2 * GY, 'j1win.png')
+                else:
+                    g.afficherImage(0.01 * GX, 0.2 * GY, 'j2win.png')
+
+                g.afficherImage(GX / 2, GY / 2, "Merci.png")
+                g.actualiser()
+                time.sleep(3)
+                g.supprimerGFX()
+                a = False
+                self.Menu()
+
 
     def tour_joueur(self,z=20,pendule=0): #On met pendule a 0 car on joue toujour le joueur 1, jamais le 2
         o = 1
@@ -898,6 +940,7 @@ class jeu():
 
         good = True
         while good:
+
             if o != 1:
 
                 if (o in self.relation.keys() or o in self.poke_on_morpion.values()) and o not in self.case_plus_jouable:  # On vérifie que la case est en jeu
@@ -905,7 +948,7 @@ class jeu():
                         o = g.recupererObjetDessous(clic.x, clic.y)
 
                     a = self.relation[o]
-                    if pendule == 0 or self.verif == False:  # Si c'est le premier tour ou cas special, on peut jouer ou on veut
+                    if  self.verif == False:  # Si c'est le premier tour ou cas special, on peut jouer ou on veut
                         self.case_occupe.append(o)
                         case = self.grille[dicrec[a[0]]].casier[a[1][0]][a[1][1]]
 
@@ -962,7 +1005,7 @@ class jeu():
         # Deuxième cas, il y a déjà un pokemon sur la case
         else:
 
-
+            self.grille[dicrec[case.indice[0]]].maj()
             res_fight = combat(case.pokemon, choix[0])  # Gagnant en premier, perdant en deuxième
             g.supprimer(self.poke_on_morpion[a])
             del self.poke_on_morpion[a]
@@ -1039,7 +1082,13 @@ class jeu():
 
         return prochain
 
-    def tour_ia(self,z):
+    def tour_ia(self,z,misajour=-1):
+
+        try:
+            self.grille[misajour].maj()
+        except:
+            None
+
         a=len(self.dicgraph2)
         indice=random.randint(0,a)
         pokemon=self.pokedispo2[indice]
@@ -1083,6 +1132,7 @@ class jeu():
         else:
             coordx,coordy=self.pokedispo2coord[pokemon][0],self.pokedispo2coord[pokemon][1]
 
+            self.grille[dicrec[case.indice[0]]].maj()
             res_fight = combat(case.pokemon, pokemon)  # Gagnant en premier, perdant en deuxième
             g.supprimer(self.poke_on_morpion[a])
             del self.poke_on_morpion[a]
@@ -1105,7 +1155,7 @@ class jeu():
 
             elif pokemon == res_fight[1]:  # Le joeur actuel a perdu le combat
                 self.graph = self.animation_combat(res_fight[0], res_fight[1])
-                objet = g.recupererObjetDessous2(choix[1] + 35, choix[2] + 15)
+                objet = g.recupererObjetDessous2(coordx + 35, coordy + 15)
                 g.supprimer(objet)
                 case.valeur = 1
                 self.pokedispo2.append(pokemon)
@@ -1152,7 +1202,9 @@ class jeu():
         self.grille[dicrec[a[0]]].maj()
         self.grille[dicrec[a[1]]].maj()
 
-        return prochain
+        g.changerCouleur(case.objet,"red")
+
+        return dicrec[case.indice[0]]
 
 
     def choixpokemon(self,pendule):
@@ -1185,7 +1237,6 @@ class jeu():
 
 
 poke=jeu()
-#poke.jeu_en_duo()
 poke.Menu()
 
 g.attendreClic()
