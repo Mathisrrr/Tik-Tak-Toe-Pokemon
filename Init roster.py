@@ -5,9 +5,11 @@ import pandas as pd
 import random
 import numpy as np
 import math
+from collections import Counter
+
 
 #VARIABLES GLOBALES
-nb_pokemon = 3
+nb_pokemon = 10
 
 #on crée le dataframe
 pokemon_df = pd.read_csv("pokemon2.csv")
@@ -213,17 +215,17 @@ class Jeu:
 
     #fonction pour équilibrer le nb de pokemons de même type dans les équipes
     def equilibrer_types(self, roster1, roster2):
-        # Récupérer tous les types des Pokémon dans les deux équipes
-
-        # équipe 1
+        print("\nEquilibrage selon les types :\n")
+        #on récupère tous les types des Pokémon dans les deux équipes
+        #équipe 1
         types_roster1 = []
-        for pokemon in roster1:
-            types_roster1.extend(obtenir_types(pokemon))  # Ajouter tous les types de chaque Pokémon à la liste
+        for pokemon in roster1.pokemon_list:
+            types_roster1.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])  # Ajouter tous les types de chaque Pokémon à la liste et on enleve les types = ""
 
         # Récupérer tous les types des Pokémon dans l'équipe 2
         types_roster2 = []
-        for pokemon in roster2:
-            types_roster2.extend(obtenir_types(pokemon))  # Ajouter tous les types de chaque Pokémon à la liste
+        for pokemon in roster2.pokemon_list:
+            types_roster2.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])  # Ajouter tous les types de chaque Pokémon à la liste
 
         # Compter les occurrences des types dans chaque équipe
         count_types_equipe1 = Counter(types_roster1)
@@ -238,22 +240,25 @@ class Jeu:
             difference = count_types_equipe1[type_] - count_types_equipe2[type_]
 
             # Si la différence est positive, équipe 1 a trop de Pokémon de ce type
-            if difference > 0:
+            if difference > 1: #si on a un nb impair de pokemon du type X, il y aura une équipe qui en a 1 de plus forcement
+                print(f"Le type {type_} est trop présent dans le roster 1")
                 # Trouver les Pokémon de ce type dans l'équipe 1
-                pokemons_a_deplacer = [pokemon for pokemon in roster1 if type_ in obtenir_types(pokemon)]
+                pokemons_a_deplacer = [pokemon for pokemon in roster1.pokemon_list if type_ in [pokemon.type1, pokemon.type2]]
                 for pokemon in pokemons_a_deplacer[:difference // 2]:  # On déplace la moitié de la différence
-                    roster1.remove(pokemon)
-                    roster2.append(pokemon)
+                    roster1.pokemon_list.remove(pokemon)
+                    roster2.pokemon_list.append(pokemon)
 
             # Si la différence est négative, équipe 2 a trop de Pokémon de ce type
-            elif difference < 0:
+            elif difference < -1:
+                print(f"Le type {type_} est trop présent dans le roster 2")
                 # Trouver les Pokémon de ce type dans l'équipe 2
-                pokemons_a_deplacer = [pokemon for pokemon in roster2 if type_ in obtenir_types(pokemon)]
+                pokemons_a_deplacer = [pokemon for pokemon in roster2.pokemon_list if type_ in [pokemon.type1, pokemon.type2]]
                 for pokemon in pokemons_a_deplacer[:(-difference) // 2]:
-                    roster2.remove(pokemon)
-                    roster1.append(pokemon)
+                    roster2.pokemon_list.remove(pokemon)
+                    roster1.pokemon_list.append(pokemon)
 
         # Retourner les équipes après rééquilibrage
+        print("\nEquilibrage selon les types fini")
         return roster1, roster2
 
     def round_combat(self,pokemon1, pokemon2):
@@ -303,10 +308,16 @@ class Jeu:
 jeu = Jeu()
 roster_player1 = Roster(pokemon_df)
 roster_player2 = Roster(pokemon_df)
+print("\nRoster joueur 1:")
+roster_player1.print_roster()
+
+print("\nRoster joueur 2:")
+roster_player2.print_roster()
 
 # Équilibrage des équipes
+jeu.equilibrer_types(roster_player1, roster_player2)
 jeu.balance_rosters(roster_player1, roster_player2)
-#jeu.equilibrer_types(roster_player1, roster_player2)
+
 
 # Affichage des rosters
 print("\nRoster joueur 1:")
