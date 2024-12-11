@@ -37,6 +37,7 @@ ref={0:"",1:"x",2:"o"}
 nombre = {'1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', "ampersand": "1",
           "eacute": "2", "quotedbl": "3", 'apostrophe': "4", 'parenleft': "5", 'section': "6", 'egrave': '7',
           'exclam': '8', 'ccedilla': '9', 'agrave': '0'}
+
 def combat(pokemon1, pokemon2):  # 1v1 entre les Pokémon
     while pokemon1.hp > 0 and pokemon2.hp > 0:
         round_combat(pokemon1, pokemon2)
@@ -57,19 +58,6 @@ def combat(pokemon1, pokemon2):  # 1v1 entre les Pokémon
         return pokemon1,pokemon2
 
 
-#proba que le poke 2 dodge l'attaque du poke 1
-def dodge(pokemon1, pokemon2):
-    #calcul de la proba de dodge
-    dodge_prob = pokemon2.sp_def / (pokemon1.sp_atk + pokemon2.sp_def)
-    # Assurer que dodge_prob est entre 0 et 1
-    dodge_prob = max(0, min(1, dodge_prob))
-    random_nb = random.random() #génère un float entre 0 et 1
-    # Déterminer si l'attaque est esquivée ou non
-    if random_nb <= dodge_prob:
-        return 'dodge'
-    else:
-        return 'get_hit'
-
 #pokemon 1 attaque le pokemon 2, cette fct calcul les pv perdu par pokemon 2
 def attack(pokemon1, pokemon2):
     capa_attak = (((pokemon1.level * 0.4)+2) * pokemon1.attack * pokemon1.sp_atk)
@@ -79,13 +67,13 @@ def attack(pokemon1, pokemon2):
     return pv_perdu
 
 def round_combat(pokemon1, pokemon2):
-    if dodge(pokemon2,pokemon1) == 'dodge':
+    if pokemon1.dodge() == 'dodge':
         print(f"{pokemon1.name} a esquivé l'attaque, il lui reste {pokemon1.hp} pv")
     else:
         pokemon1.hp -= attack(pokemon2, pokemon1)
         print(f"{pokemon1.name} a pris {attack(pokemon2,pokemon1)} degats, il lui reste {pokemon1.hp} pv")
 
-    if dodge(pokemon1,pokemon2)=='dodge':
+    if pokemon2.dodge() =='dodge':
         print(f"{pokemon2.name} a esquivé l'attaque, il lui reste {pokemon2.hp} pv")
     else:
         pokemon2.hp -= attack(pokemon1, pokemon2)
@@ -182,28 +170,6 @@ class Pokemon:
         degats = (np.floor(np.floor(capa_attak / capa_def) / 2) + 2  ) * multiplicateur
 
         return degats
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class Roster:
     def __init__(self, dataframe, num_pokemon):
@@ -305,7 +271,7 @@ class jeu():
     # fonction pour équilibrer le nb de pokemons de même type dans les équipes
     def equilibrer_types(self, roster1, roster2):
         print("\nEquilibrage selon les types :\n")
-        # Récupérer tous les types des Pokémon dans les deux équipes
+        #on récupère tous les types des Pokémon dans les deux équipes
         types_roster1 = []
         for pokemon in roster1.pokemon_list:
             types_roster1.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])
@@ -315,29 +281,29 @@ class jeu():
             types_roster2.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])
 
         # Compter les occurrences des types dans chaque équipe
-        count_types_equipe1 = Counter(types_roster1)
-        count_types_equipe2 = Counter(types_roster2)
+        count_types_roster1 = Counter(types_roster1)
+        count_types_roster2 = Counter(types_roster2)
 
         # Affichage des comptes de types
-        print("Types dans l'équipe 1:", count_types_equipe1)
-        print("Types dans l'équipe 2:", count_types_equipe2)
+        print("Types dans l'équipe 1:", count_types_roster1)
+        print("Types dans l'équipe 2:", count_types_roster2)
 
         # Identifier les types qui sont trop présents
-        for type_ in set(types_roster1 + types_roster2):
-            difference = count_types_equipe1[type_] - count_types_equipe2[type_]
+        for type in set(types_roster1 + types_roster2):#on obtient tous les types présents en enlevant les doublons
+            difference = count_types_roster1[type] - count_types_roster2[type] #on cherche le nb d occurence dans les dico Counter
 
             if difference > 1:
-                print(f"Le type {type_} est trop présent dans le roster 1")
+                print(f"Le type {type} est trop présent dans le roster 1")
                 pokemons_a_deplacer = [pokemon for pokemon in roster1.pokemon_list if
-                                       type_ in [pokemon.type1, pokemon.type2]]
-                for pokemon in pokemons_a_deplacer[:difference // 2]:
+                                       type in [pokemon.type1, pokemon.type2]] #liste de tous les pokemon du type sur représenté
+                for pokemon in pokemons_a_deplacer[:difference // 2]: #on prend les diff // 2 premiers pokemons de ceux a deplacer
                     roster1.pokemon_list.remove(pokemon)
                     roster2.pokemon_list.append(pokemon)
 
-            elif difference < -1:
-                print(f"Le type {type_} est trop présent dans le roster 2")
+            elif difference < -1: # pareil si un type est sur représenté dans le roster2
+                print(f"Le type {type} est trop présent dans le roster 2")
                 pokemons_a_deplacer = [pokemon for pokemon in roster2.pokemon_list if
-                                       type_ in [pokemon.type1, pokemon.type2]]
+                                       type in [pokemon.type1, pokemon.type2]]
                 for pokemon in pokemons_a_deplacer[:(-difference) // 2]:
                     roster2.pokemon_list.remove(pokemon)
                     roster1.pokemon_list.append(pokemon)
