@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import random
 from math import *
+from collections import Counter
 
 
 #on crée le dataframe
@@ -109,11 +110,107 @@ class Pokemon:
 
     def __str__(self):
         return f"{self.name} ({self.type1}/{self.type2}) - Total: {self.total}, HP: {self.hp}, ATK: {self.attack}, DEF: {self.defense}, SPEED: {self.speed}: LEVEL: {self.level})"
+
+
+    def dodge_chance(self):  # return une chance d'esquive en %
+        # speed comprises entre 5 et 180 dans le excel
+        real_speed = log(self.speed) * (5 / 6)  # on met la speed entre 1,34 et 4,33 grace a la formule
+        # formule choisie arbitrairement qui permet d'avoir des taux d'esquives pas trop abusés
+        dodge_rate = real_speed * 10  # on obtient un dodge rate de 13,4 à 43,3%
+        return dodge_rate
+
+    def dodge(self):  # return True si esquive, False si pas esquive
+        dodge = False
+        dodge_rate = self.dodge_chance()  # taux d'esquive en pourcentage
+        random_nb = random.uniform(0, 100)
+        if random_nb <= dodge_rate:  # esquive si le nombre aléatoire est inférieur au taux
+            dodge = True
+        return dodge
+
+    def type_multiplier(self,attacker_type1, attacker_type2, defender_type1, defender_type2):
+        #Tableau des multiplicateurs de degats en fonction des différents types
+        coef_type = {
+            "Normal": {"Rock": 0.5, "Ghost": 0.0, "Steel": 0.5},
+            "Fire": {"Grass": 2.0, "Ice": 2.0, "Bug": 2.0, "Steel": 2.0, "Fire": 0.5, "Water": 0.5, "Rock": 0.5,
+                     "Dragon": 0.5},
+            "Water": {"Fire": 2.0, "Ground": 2.0, "Rock": 2.0, "Water": 0.5, "Grass": 0.5, "Dragon": 0.5},
+            "Electric": {"Water": 2.0, "Flying": 2.0, "Electric": 0.5, "Grass": 0.5, "Ground": 0.0, "Dragon": 0.5},
+            "Grass": {"Water": 2.0, "Ground": 2.0, "Rock": 2.0, "Fire": 0.5, "Grass": 0.5, "Poison": 0.5, "Flying": 0.5,
+                      "Bug": 0.5, "Dragon": 0.5, "Steel": 0.5},
+            "Ice": {"Grass": 2.0, "Ground": 2.0, "Flying": 2.0, "Dragon": 2.0, "Fire": 0.5, "Water": 0.5, "Ice": 0.5,
+                    "Steel": 0.5},
+            "Fighting": {"Normal": 2.0, "Ice": 2.0, "Rock": 2.0, "Dark": 2.0, "Steel": 2.0, "Poison": 0.5,
+                         "Flying": 0.5, "Psychic": 0.5, "Bug": 0.5, "Fairy": 0.5, "Ghost": 0.0},
+            "Poison": {"Grass": 2.0, "Fairy": 2.0, "Poison": 0.5, "Ground": 0.5, "Rock": 0.5, "Ghost": 0.5,
+                       "Steel": 0.0},
+            "Ground": {"Fire": 2.0, "Electric": 2.0, "Poison": 2.0, "Rock": 2.0, "Steel": 2.0, "Grass": 0.5, "Bug": 0.5,
+                       "Flying": 0.0},
+            "Flying": {"Grass": 2.0, "Fighting": 2.0, "Bug": 2.0, "Electric": 0.5, "Rock": 0.5, "Steel": 0.5},
+            "Psychic": {"Fighting": 2.0, "Poison": 2.0, "Psychic": 0.5, "Steel": 0.5, "Dark": 0.0},
+            "Bug": {"Grass": 2.0, "Psychic": 2.0, "Dark": 2.0, "Fire": 0.5, "Fighting": 0.5, "Poison": 0.5,
+                    "Flying": 0.5, "Ghost": 0.5, "Steel": 0.5, "Fairy": 0.5},
+            "Rock": {"Fire": 2.0, "Ice": 2.0, "Flying": 2.0, "Bug": 2.0, "Fighting": 0.5, "Ground": 0.5, "Steel": 0.5},
+            "Ghost": {"Psychic": 2.0, "Ghost": 2.0, "Dark": 0.5, "Normal": 0.0},
+            "Dragon": {"Dragon": 2.0, "Steel": 0.5, "Fairy": 0.0},
+            "Dark": {"Psychic": 2.0, "Ghost": 2.0, "Fighting": 0.5, "Dark": 0.5, "Fairy": 0.5},
+            "Steel": {"Ice": 2.0, "Rock": 2.0, "Fairy": 2.0, "Fire": 0.5, "Water": 0.5, "Electric": 0.5, "Steel": 0.5},
+            "Fairy": {"Fighting": 2.0, "Dragon": 2.0, "Dark": 2.0, "Fire": 0.5, "Poison": 0.5, "Steel": 0.5},
+        }
+
+        #calculer le multiplicateur pour un seul type
+        def single_type_multiplier(type_poke_attack, type_poke_defend):
+            if type_poke_attack == "" or type_poke_defend == "":  # Si l'un des types est = au caractère vide
+                return 1
+            return coef_type.get(type_poke_attack).get(type_poke_defend, 1) #on met le 1 pour quand le type d'attaque et de défense n'ont pas de coef multiplicateur particulier
+
+        #multiplicateurs en fonction des 2 types de chaque pokemon (double distributivitée)
+        multiplier1 = single_type_multiplier(attacker_type1, defender_type1)
+        multiplier2 = single_type_multiplier(attacker_type1, defender_type2)
+        multiplier3 = single_type_multiplier(attacker_type2, defender_type1)
+        multiplier4 = single_type_multiplier(attacker_type2, defender_type2)
+
+        # Produit des multiplicateurs
+        total_multiplier = multiplier1 * multiplier2 * multiplier3 * multiplier4
+        return total_multiplier
+
+    def attack_(self, pokemon2):
+        #le pokemon (self) attaque le pokemon adverse (pokemon2), cette fct calcul combien de pv le pokemon adverse va perdre
+        chance = random.uniform(0.85, 1.15) #la chance peut reduire ou augmenter de 15% maximum les degats infligés
+        capa_attak = (((self.level * 1.2) + 2) * self.attack + 0.2 * self.sp_atk) * chance
+        capa_def = pokemon2.defense * 0.1
+        multiplicateur = self.type_multiplier(self.type1, self.type2, pokemon2.type1, pokemon2.type2)
+        degats = (np.floor(np.floor(capa_attak / capa_def) / 2) + 2  ) * multiplicateur
+
+        return degats
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Roster:
     def __init__(self, dataframe, num_pokemon):
         self.dataframe = dataframe
         self.num_pokemon = num_pokemon
         self.pokemon_list = self.init_roster()
+
 
     def init_roster(self): #return une liste d'objects pokemon
         #on choisit num_pokemon lignes du dataframe aléatoirement (.sample)
@@ -147,68 +244,6 @@ class Roster:
         for index, pokemon in enumerate(self.pokemon_list, start=1):
             print(f"{index}. {pokemon}")
 
-    # Fonction pour équilibrer les rosters
-    # diff = différence maximale de puissance en pourcentage entre les 2 rosters qu'on cherche à avoir
-    def balance_rosters(roster1, roster2, diff = 10):
-        powerR1 = roster1.total_power()
-        powerR2 = roster2.total_power()
-        diff_power = round(abs((powerR1 - powerR2) / powerR2) * 100, 2)  # Calcul de la différence de puissance
-        print(f"\nPuissances initiales des équipes :\n"
-              f"Puissance roster 1: {powerR1}\n"
-              f"Puissance roster 2: {powerR2}\n"
-              f"Difference de puissance: {diff_power}%\n"
-              f"Différence de puissance max: {diff}%")
-
-        max_iterations = 100  # Limite pour éviter une boucle infinie
-        cpt = 0  # Compteur
-        if diff_power < diff:
-            return True
-
-        while diff_power > diff and cpt < max_iterations:
-            cpt += 1
-
-            # Identifier les Pokémons à échanger
-            if powerR1 > powerR2:  # Roster 1 est plus fort
-                pokemon_fort = max(roster1.pokemon_list, key=lambda p: p.total)  # Pokémon le plus fort du roster 1
-                pokemon_faible = min(roster2.pokemon_list, key=lambda p: p.total)  # Pokémon le plus faible du roster 2
-
-                # Échange le Pokémon le plus fort de roster 1 contre le Pokémon le plus faible de roster 2
-                roster1.pokemon_list.remove(pokemon_fort)
-                roster1.pokemon_list.append(pokemon_faible)
-                roster2.pokemon_list.append(pokemon_fort)
-                roster2.pokemon_list.remove(pokemon_faible)
-                print(f"\npokemons echangés:\n{pokemon_faible.name} (roster2 --> roster1) et\n"
-                      f"{pokemon_fort.name} (roster1 --> roster2)")
-
-
-            else:  # Roster 2 est plus fort
-                pokemon_fort = max(roster2.pokemon_list, key=lambda p: p.total)
-                pokemon_faible = min(roster1.pokemon_list, key=lambda p: p.total)
-
-                # Échange le Pokémon le plus fort de roster 2 contre le Pokémon le plus faible de roster 1
-                roster2.pokemon_list.remove(pokemon_fort)
-                roster2.pokemon_list.append(pokemon_faible)
-                roster1.pokemon_list.append(pokemon_fort)
-                roster1.pokemon_list.remove(pokemon_faible)
-                print(f"\npokemons echangés:\n{pokemon_faible.name} (roster1 --> roster2) et\n"
-                      f"{pokemon_fort.name} (roster2 --> roster1)")
-
-            # Recalcul des puissances
-            powerR1 = roster1.total_power()
-            powerR2 = roster2.total_power()
-            diff_power = round(abs((powerR1 - powerR2) / powerR2) * 100, 2)
-
-
-
-        if cpt == max_iterations:
-            print("Équilibrage arrêté après avoir atteint la limite d'itérations.")
-
-        print("\nÉquilibrage terminé.")
-        print(f"\nPuissances après équilibrage:\n"
-              f"Puissance roster 1: {powerR1}\n"
-              f"Puissance roster 2: {powerR2}\n"
-              f"Difference de puissance: {diff_power}%\n"
-              f"Difference de puissance max: {diff}%")
 
 class Morpion() :
     def __init__(self,k):
@@ -267,7 +302,121 @@ class jeu():
         self.case_occupe=[]
         self.poke_on_morpion={}
 
+    # fonction pour équilibrer le nb de pokemons de même type dans les équipes
+    def equilibrer_types(self, roster1, roster2):
+        print("\nEquilibrage selon les types :\n")
+        # Récupérer tous les types des Pokémon dans les deux équipes
+        types_roster1 = []
+        for pokemon in roster1.pokemon_list:
+            types_roster1.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])
 
+        types_roster2 = []
+        for pokemon in roster2.pokemon_list:
+            types_roster2.extend([pokemon.type1, pokemon.type2] if pokemon.type2 else [pokemon.type1])
+
+        # Compter les occurrences des types dans chaque équipe
+        count_types_equipe1 = Counter(types_roster1)
+        count_types_equipe2 = Counter(types_roster2)
+
+        # Affichage des comptes de types
+        print("Types dans l'équipe 1:", count_types_equipe1)
+        print("Types dans l'équipe 2:", count_types_equipe2)
+
+        # Identifier les types qui sont trop présents
+        for type_ in set(types_roster1 + types_roster2):
+            difference = count_types_equipe1[type_] - count_types_equipe2[type_]
+
+            if difference > 1:
+                print(f"Le type {type_} est trop présent dans le roster 1")
+                pokemons_a_deplacer = [pokemon for pokemon in roster1.pokemon_list if
+                                       type_ in [pokemon.type1, pokemon.type2]]
+                for pokemon in pokemons_a_deplacer[:difference // 2]:
+                    roster1.pokemon_list.remove(pokemon)
+                    roster2.pokemon_list.append(pokemon)
+
+            elif difference < -1:
+                print(f"Le type {type_} est trop présent dans le roster 2")
+                pokemons_a_deplacer = [pokemon for pokemon in roster2.pokemon_list if
+                                       type_ in [pokemon.type1, pokemon.type2]]
+                for pokemon in pokemons_a_deplacer[:(-difference) // 2]:
+                    roster2.pokemon_list.remove(pokemon)
+                    roster1.pokemon_list.append(pokemon)
+
+        # Ajustement des tailles des équipes
+        while len(roster1.pokemon_list) > len(roster2.pokemon_list):
+            pokemon = random.choice(roster1.pokemon_list)
+            roster1.pokemon_list.remove(pokemon)
+            roster2.pokemon_list.append(pokemon)
+
+        while len(roster2.pokemon_list) > len(roster1.pokemon_list):
+            pokemon = random.choice(roster2.pokemon_list)
+            roster2.pokemon_list.remove(pokemon)
+            roster1.pokemon_list.append(pokemon)
+
+        print("\nEquilibrage selon les types fini")
+        return roster1, roster2
+
+    # Fonction pour équilibrer les rosters
+    # diff = différence maximale de puissance en pourcentage entre les 2 rosters qu'on cherche à avoir
+    def balance_rosters(self,roster1, roster2, diff=2):
+        powerR1 = roster1.total_power()
+        powerR2 = roster2.total_power()
+        diff_power = round(abs((powerR1 - powerR2) / powerR2) * 100, 2)  # Calcul de la différence de puissance
+        print(f"\nPuissances initiales des équipes :\n"
+              f"Puissance roster 1: {powerR1}\n"
+              f"Puissance roster 2: {powerR2}\n"
+              f"Difference de puissance: {diff_power}%\n"
+              f"Différence de puissance max: {diff}%")
+
+        max_iterations = 100  # Limite pour éviter une boucle infinie
+        cpt = 0  # Compteur
+        if diff_power < diff:
+            return True
+
+        while diff_power > diff and cpt < max_iterations:
+            cpt += 1
+
+            # Identifier les Pokémons à échanger
+            if powerR1 > powerR2:  # Roster 1 est plus fort
+                pokemon_fort = max(roster1.pokemon_list, key=lambda p: p.total)  # Pokémon le plus fort du roster 1
+                pokemon_faible = min(roster2.pokemon_list,
+                                     key=lambda p: p.total)  # Pokémon le plus faible du roster 2
+
+                # Échange le Pokémon le plus fort de roster 1 contre le Pokémon le plus faible de roster 2
+                roster1.pokemon_list.remove(pokemon_fort)
+                roster1.pokemon_list.append(pokemon_faible)
+                roster2.pokemon_list.append(pokemon_fort)
+                roster2.pokemon_list.remove(pokemon_faible)
+                print(f"\npokemons echangés:\n{pokemon_faible.name} (roster2 --> roster1) et\n"
+                      f"{pokemon_fort.name} (roster1 --> roster2)")
+
+
+            else:  # Roster 2 est plus fort
+                pokemon_fort = max(roster2.pokemon_list, key=lambda p: p.total)
+                pokemon_faible = min(roster1.pokemon_list, key=lambda p: p.total)
+
+                # Échange le Pokémon le plus fort de roster 2 contre le Pokémon le plus faible de roster 1
+                roster2.pokemon_list.remove(pokemon_fort)
+                roster2.pokemon_list.append(pokemon_faible)
+                roster1.pokemon_list.append(pokemon_fort)
+                roster1.pokemon_list.remove(pokemon_faible)
+                print(f"\npokemons echangés:\n{pokemon_faible.name} (roster1 --> roster2) et\n"
+                      f"{pokemon_fort.name} (roster2 --> roster1)")
+
+            # Recalcul des puissances
+            powerR1 = roster1.total_power()
+            powerR2 = roster2.total_power()
+            diff_power = round(abs((powerR1 - powerR2) / powerR2) * 100, 2)
+
+        if cpt == max_iterations:
+            print("Équilibrage arrêté après avoir atteint la limite d'itérations.")
+
+        print("\nÉquilibrage terminé.")
+        print(f"\nPuissances après équilibrage:\n"
+              f"Puissance roster 1: {powerR1}\n"
+              f"Puissance roster 2: {powerR2}\n"
+              f"Difference de puissance: {diff_power}%\n"
+              f"Difference de puissance max: {diff}%")
 
     def delete(self, list):                 #Cette fonction reçoit une liste d'objet graphique et les supprime tous
         for obj in list:
@@ -415,7 +564,7 @@ class jeu():
             g.placerAuDessous(self.fond)
         except:None
 
-    def calcul_opti(self):
+    def calcul_opti(self):#Pour l'affichage des rosters
         if self.num_pokemon % sqrt(self.num_pokemon) == 0:  # Affiche optimal si carré parfait
             self.l = int(sqrt(self.num_pokemon))
         else:  # Sinon
@@ -436,15 +585,18 @@ class jeu():
 
         self.roster_player1 = Roster(pokemon_df, self.num_pokemon)
         self.roster_player2 = Roster(pokemon_df, self.num_pokemon)
+        print(len(self.roster_player1.pokemon_list),'longueur de la liste avant')
 
-        # Équilibrage des équipes
-        #Roster.balance_rosters(self.roster_player1, self.roster_player2)
-
-        # Affichage des rosters
         print("\nRoster joueur 1:")
         self.roster_player1.print_roster()
         print("\nRoster joueur 2:")
         self.roster_player2.print_roster()
+
+        # Équilibrage des équipes
+        self.balance_rosters(self.roster_player1,self.roster_player2)
+        self.equilibrer_types(self.roster_player1,self.roster_player2)
+        print(len(self.roster_player1.pokemon_list),'longueur de la liste après')
+
         self.pokedispo1=[]
         self.pokedispo2=[]
         self.graph1=[]
@@ -452,6 +604,7 @@ class jeu():
         a=0
         for y in range(self.l + 1):
             for x in range(self.l):
+
                 if a == self.num_pokemon:  # Si on a atteint le nombre de pokémons, on s'arrête.
                     break
 
@@ -469,6 +622,7 @@ class jeu():
         a=0
         for y in range(self.l + 1):
             for x in range(self.l):
+
                 if a == self.num_pokemon:  # Si on a atteint le nombre de pokémons, on s'arrête.
                     break
 
@@ -482,8 +636,6 @@ class jeu():
                 self.pokedispo2.append(self.roster_player2.pokemon_list[a])
                 self.pokedispo2coord[self.roster_player2.pokemon_list[a]]=(coordx,coordy)
                 a += 1
-
-
 
 
     def remplissage(self): #Pour chaque petit morpion, on lui rajoute ses cases
@@ -786,11 +938,12 @@ class jeu():
         return (fin,val)
 
     def affichage_stats(self,pokemon):
+        col="black"
         graph=[g.afficherImage(0.05*X,Y*1.02,"nom.png"),g.afficherImage(X*0.4,Y*1.02,"Type 1.png"),g.afficherImage(X*0.7,Y*1.02,'Type 2.png'),
                g.afficherImage(0.05*X,Y*1.14,"atck.png"),g.afficherImage(X*0.4,Y*1.14,"def.png"),g.afficherImage(X*0.7,Y*1.14,'vitesse.png'),g.afficherImage(0.35*X,Y*1.25,"pv.png")]
-        txt=[g.afficherTexte(pokemon.name,0.26*X,Y*1.06,"white",sizefont=22),g.afficherTexte(pokemon.type1,X*0.64,Y*1.06,sizefont=22),g.afficherTexte(pokemon.type2,X*0.94,Y*1.06,sizefont=22),
-             g.afficherTexte(pokemon.attack,0.3*X,Y*1.18,sizefont=22),g.afficherTexte(pokemon.defense,0.64*X,Y*1.18,sizefont=22),g.afficherTexte(pokemon.speed,0.94*X,Y*1.18,sizefont=22),
-             g.afficherTexte(pokemon.hp,0.49*X,01.28*Y,sizefont=22)]
+        txt=[g.afficherTexte(pokemon.name,0.26*X,Y*1.06,col,sizefont=22),g.afficherTexte(pokemon.type1,X*0.64,Y*1.06,col,sizefont=22),g.afficherTexte(pokemon.type2,X*0.94,Y*1.06,col,sizefont=22),
+             g.afficherTexte(pokemon.attack,0.3*X,Y*1.18,col,sizefont=22),g.afficherTexte(pokemon.defense,0.64*X,Y*1.18,col,sizefont=22),g.afficherTexte(pokemon.speed,0.94*X,Y*1.18,col,sizefont=22),
+             g.afficherTexte(pokemon.hp,0.49*X,01.28*Y,col,sizefont=22)]
         return graph+txt
 
     def animation_combat(self,pokemon1,pokemon2):#Le pokemon 1 est le vainqueur du combat
@@ -1237,6 +1390,7 @@ class jeu():
 
 
 poke=jeu()
+
 poke.Menu()
 
 g.attendreClic()
